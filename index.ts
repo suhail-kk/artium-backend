@@ -9,6 +9,7 @@ import dbConnect from '@/lib/config/db';
 
 // routes
 import { router as authRoutes } from '@/lib/routes/auth';
+import { router as commonRoutes } from '@/lib/routes/common';
 
 //app initialization
 const app = express();
@@ -28,6 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 
 //route middlewares
 app.use('/auth', authRoutes);
+app.use('/common', commonRoutes);
 
 //Page not found error handling middleware
 app.use(
