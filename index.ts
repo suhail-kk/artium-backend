@@ -8,7 +8,9 @@ require('dotenv/config');
 import dbConnect from '@/lib/config/db';
 
 // routes
+import { DbSeedersRoutes } from '@/lib/routes/dbSeed';
 import { router as authRoutes } from '@/lib/routes/auth';
+import { CampaignRoutes } from '@/lib/routes/campaign/campaign.controller';
 
 //app initialization
 const app = express();
@@ -28,6 +30,8 @@ app.use(express.urlencoded({ extended: true }));
 
 //route middlewares
 app.use('/auth', authRoutes);
+app.use('/api/seed', DbSeedersRoutes);
+app.use('/api/campaign', CampaignRoutes);
 
 //Page not found error handling middleware
 app.use(
