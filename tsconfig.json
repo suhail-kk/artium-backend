@@ -4,11 +4,15 @@
 		"resolveJsonModule": true,
 		"esModuleInterop": true,
 		"baseUrl": ".",
-		"rootDir": "./src",
+		"rootDir": ".",
 		"outDir": "./dist",
 		"paths": {
 			"@/*": ["*"]
-		}
+		},
+		"target": "ES6",
+		"module": "CommonJS",
+		"strict": true,
+		"skipLibCheck": true
 	},
 	"include": ["./**/*", "./**/*.json"],
 	"ts-node": {

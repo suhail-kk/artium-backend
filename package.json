@@ -6,7 +6,7 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"start": "ts-node index.ts",
-		"build": "npx tsc && tsc-alias",
+		"build": "node build.js",
 		"server": "nodemon index.ts"
 	},
 	"author": "imthiyaz",
