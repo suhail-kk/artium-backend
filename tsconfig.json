@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"moduleResolution": "node",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["*"]
+		}
+	},
+	"include": ["./**/*", "./**/*.json"],
+	"ts-node": {
+		"require": ["tsconfig-paths/register"]
+	}
+}
