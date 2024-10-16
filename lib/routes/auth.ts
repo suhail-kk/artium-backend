@@ -10,4 +10,4 @@ router.get('/me', () => {
 
 router.post('/me', userUpdateValidator(), updateUserProfile);
 
-export { router };
+export { router as authRoutes }
