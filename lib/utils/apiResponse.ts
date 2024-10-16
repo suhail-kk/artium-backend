@@ -1,56 +1,59 @@
-import { NextResponse } from "next/server";
+import { Response } from 'express';
 
-const statusMessages: { [key: string]: string } = {
-    200: 'OK',
-    201: 'Created',
-    400: 'Bad Request',
-    401: 'Unauthorized',
-    403: 'Forbidden',
-    404: 'Not Found',
-    500: 'Internal Server Error',
+const statusMessages: { [key: number]: string } = {
+	200: 'OK',
+	201: 'Created',
+	400: 'Bad Request',
+	401: 'Unauthorized',
+	403: 'Forbidden',
+	404: 'Not Found',
+	500: 'Internal Server Error',
 };
 
-export default function createResponse(
-    {
-        data,
-        status = 200,
-        meta = {},
-        page = 1,
-        size = null
-    }:
-        {
-            data: unknown,
-            status?: number,
-            meta?: unknown,
-            page?: number,
-            size?: null | number
-        }
+// Function to create a standard response
+export function createResponse(
+	res: Response,
+	{
+		data,
+		status = 200,
+		meta = {},
+		page = 1,
+		size = null,
+	}: {
+		data: unknown;
+		status?: number;
+		meta?: unknown;
+		page?: number;
+		size?: null | number;
+	}
 ) {
-    return NextResponse.json({
-        status,
-        message: statusMessages[status],
-        data,
-        meta,
-        page,
-        size
-    }, { status })
+	res.status(status).json({
+		status,
+		message: statusMessages[status] || 'Success',
+		data,
+		meta,
+		page,
+		size,
+	});
 }
 
-export function createErrorResponse(err: unknown, meta?: unknown) {
-    const error = JSON.parse(JSON.stringify(err))
+// Function to create a standard error response
+export function createErrorResponse(
+	res: Response,
+	err: unknown,
+	meta?: unknown
+) {
+	// Convert the error to an object if possible
+	const error = JSON.parse(JSON.stringify(err)) || {};
+	const status = error?.status || 500;
+	const errorMessage =
+		error.message || statusMessages[status] || 'An error occurred';
 
-
-    const status = error?.status || 500;
-    const errorMessage = error.message || statusMessages[status] || 'An error occurred';
-
-    return NextResponse.json({
-        status,
-        message: errorMessage,
-        error: error?.message || error || 'Unknown error',
-        meta,
-        timestamp: new Date().toISOString(),
-    }, {
-        status,
-        headers: { 'Content-Type': 'application/json' },
-    })
+	res.status(status).json({
+		status,
+		message: errorMessage,
+		error: error?.message || error || 'Unknown error',
+		meta,
+		timestamp: new Date().toISOString(),
+	});
 }
