@@ -1,10 +1,11 @@
+import dbSeeders from '@/lib/schemas/dbSeeders'
 import { NextFunction, Request, Response } from 'express'
-import { createErrorResponse, createResponse } from '@/lib/utils/apiResponse'
+import { BadRequestError } from '@/lib/utils/errors/errors'
 import seederConstants from '@/lib/constants/seederConstants'
-import dbSeeders from '../schemas/dbSeeders'
+import { sendSuccessResponse } from '@/lib/utils/responses/success.handler'
 
-export const dbSeedController = async (
-  _req: Request,
+const dbSeedController = async (
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -12,22 +13,23 @@ export const dbSeedController = async (
 
 
     for (const key of seederConstants) {
-        const { name, func, description } = key
-        const isExists = await dbSeeders.exists({ seeder_name: name }) // checking seeder exists on the db
+      const { name, func, description } = key
+      const isExists = await dbSeeders.exists({ seeder_name: name }) // checking seeder exists on the db
 
-        if (isExists) continue
+      if (isExists) continue
 
-        await func() // executing seeder
+      await func() // executing seeder
 
-        await dbSeeders.create({
-            seeder_name: name,
-            description,
-        }) // inserting seeder on db
+      await dbSeeders.create({
+        seeder_name: name,
+        description,
+      }) // inserting seeder on db
     }
 
-    return createResponse(res, { data: {}, status: 200 });
+    return sendSuccessResponse(res, "Seeder run successfully");
 
-} catch (error) {
-   return createErrorResponse(res, error);
+  } catch (error) {
+    return new BadRequestError("Failed to run seeders");
+  }
 }
-}
+export default dbSeedController as any

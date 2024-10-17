@@ -1,7 +1,7 @@
 import express from 'express'
-import { dbSeedController } from '@/lib/controllers/dbSeed.controller'
+import db from '@/lib/controllers/dbSeed.controller'
 const router = express.Router()
 
-router.post('/seed-all', dbSeedController)
+router.post('/seed-all', db)
 
-export { router as DbSeedersRoutes }
+export { router }

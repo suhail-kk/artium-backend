@@ -1,10 +1,13 @@
+import { NextFunction, Request, Response } from 'express'
 
+import { v4 as uuidv4 } from 'uuid'
+
+import { uploadFile } from '@/lib/utils/storage.utils'
+import { BadRequestError } from '@/lib/utils/errors/errors';
+import { createErrorResponse } from '@/lib/utils/apiResponse'
 import productServices from '@/lib/services/product.services'
 import campaignServices from '@/lib/services/campaign.services'
-import { createResponse, createErrorResponse } from '@/lib/utils/apiResponse'
-import { NextFunction, Request, Response } from 'express'
-import { v4 as uuidv4 } from 'uuid'
-import { uploadFile } from '@/lib/utils/storage.utils'
+import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 
 export async function createCampaign(req: Request, res: Response,
     next: NextFunction) {
@@ -30,7 +33,7 @@ export async function createCampaign(req: Request, res: Response,
             const fileUploadRes = await uploadFile({ source: logo_image.path, targetName: logo_image_key })
 
             if (!fileUploadRes)
-                return createErrorResponse({ message: 'Failed to upload logo image file' }, 400);
+                return new BadRequestError('Failed to upload logo image file');
         }
 
         if (product_image) {
@@ -41,7 +44,9 @@ export async function createCampaign(req: Request, res: Response,
             const fileUploadRes = await uploadFile({ source: product_image.path, targetName: product_image_key })
 
             if (!fileUploadRes)
-                return createErrorResponse({ message: 'Failed to upload product file' }, 400);
+
+
+                return new BadRequestError('Failed to upload product file');
         }
 
         const {
@@ -97,17 +102,14 @@ export async function createCampaign(req: Request, res: Response,
         }
         const retVal = await campaignServices.createCampaign(campaignPayload)
 
-        return createResponse(res, { data: retVal, status: 200 });
+        return sendSuccessResponse(res, "Campaign created successfully", retVal);
 
     } catch (error) {
-        console.log('====================================');
-        console.log(error);
-        console.log('====================================');
-        return createErrorResponse(res, error);
+        return new BadRequestError('Failed to create campaign');
     }
 }
 
-export async function updateCampaign(req: Request, res: Response) {
+export async function updateCampaign(req: any, res: any) {
     try {
         const body = await req.body
 
@@ -171,10 +173,10 @@ export async function updateCampaign(req: Request, res: Response) {
             campaignPayload
         )
 
-        return createResponse(res, { data: { data: campaign }, status: 200 });
+        return sendSuccessResponse(res, "Campaign updated successfully", campaign);
 
     } catch (error) {
-        return createErrorResponse(res, error);
+        return new BadRequestError('Failed to update campaign details');
     }
 }
 
@@ -188,9 +190,9 @@ export async function deleteCampaign(req: Request, res: Response) {
 
         const response = await campaignServices.deleteCampaign(id)
 
-        return createResponse(res, { data: response, status: 200 });
+        return sendSuccessResponse(res, "Campaign deleted successfully", response);
     } catch (error) {
-        return createErrorResponse(res, error);
+        return new BadRequestError('Failed to delete a campaign');
     }
 }
 
@@ -208,7 +210,8 @@ export async function getCampaigns(req: Request, res: Response) {
         )
         const totalPages = Math.ceil(count / limit)
 
-        return createResponse(res, {
+
+        return sendSuccessResponse(res, "Campaign fetched successfully", {
             data: data,
             meta: {
                 page: page,
@@ -216,10 +219,10 @@ export async function getCampaigns(req: Request, res: Response) {
                 total: count,
                 totalPages,
             }, status: 200
-        })
+        });
 
     } catch (error) {
-        return createErrorResponse(res, error);
+        return new BadRequestError('Failed to fetch campaigns');
     }
 }
 
@@ -233,8 +236,8 @@ export async function getCampaignById(req: Request, res: Response) {
 
         const retVal = await campaignServices.getCampaignById(campaign_id)
 
-        return createResponse(res, { data: retVal, status: 200 });
+        return sendSuccessResponse(res, "Campaign details fetched successfully", retVal);
     } catch (error) {
-        return createErrorResponse(res, error);
+        return new BadRequestError('Failed to fetch campaign details');
     }
 }

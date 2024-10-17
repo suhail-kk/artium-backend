@@ -3,8 +3,8 @@ import { getCreatorsCount, getDeliveryTypes, getVideoTypes } from '@/lib/control
 
 const router = express.Router()
 
-router.get('/video-types',getVideoTypes);
-router.get('/creators-count',getCreatorsCount);
-router.get('/delivery-types',getDeliveryTypes);
+router.get('/video-types', getVideoTypes);
+router.get('/creators-count', getCreatorsCount);
+router.get('/delivery-types', getDeliveryTypes);
 
-export { router as DropDownRoutes }
+export { router }
