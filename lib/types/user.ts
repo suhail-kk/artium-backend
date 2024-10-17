@@ -50,14 +50,14 @@ export interface RequestBody {
     },
     lead_description: string
 }
-export interface brandObject {
+export interface IbrandObject {
     title: string,
     instagram_link: string,
     brand_description: string
 }
 export interface IUser {
     email: string,
-    name: string,
+    firstName: string,
     password: string,
     role: string,
     brandId?: mongoose.Schema.Types.ObjectId,
@@ -68,7 +68,7 @@ export interface IUser {
 }
 export interface ICreateUser {
     email: string,
-    name: string,
+    firstName: string,
     password: string,
     role: string,
     brandId?: mongoose.Schema.Types.ObjectId,

@@ -6,9 +6,9 @@ interface checkUser {
     _id?: mongoose.Types.ObjectId,
     deletedAt?: null | Date
 }
-interface createUser {
+interface IcreateUser {
     email: string,
-    name: string,
+    firstName: string,
     password: string,
     role: string,
     brandId?: mongoose.Schema.Types.ObjectId,
@@ -17,7 +17,7 @@ interface createUser {
     is_verified: boolean
 
 }
-const createUser = async (data: createUser) => {
+const createUser = async (data: IcreateUser) => {
     const user = await User.create(data)
     return user
 }

@@ -1,190 +1,235 @@
-// import { NextFunction, Request, Response } from 'express'
-// import { generateHashPassword, validatePassword } from '@/lib/utils/passwordUtils'
-// import userServices from '@/lib/services/auth.services'
-// import { ICreateUser } from '@/lib/types/user'
-// import  {createResponse, createErrorResponse } from '@/lib/utils/apiResponse'
-// import { createUserJWT, verifyJWTToken } from '@Helper/jwt.utils'
+import { NextFunction, Request, Response } from 'express'
+import { generateHashPassword, validatePassword } from '@/lib/utils/passwordUtils'
+import userServices from '@/lib/services/auth.services'
+import { ICreateUser } from '@/lib/types/user'
+import { sendSuccessResponse } from '@/lib/utils/responses/success.handler'
+import { createUserJWT,verifyJWTToken } from '@/lib/utils/jwtUtils'
+import brandService from '@/lib/services/brand.service'
+import {IUser, IBrand,IbrandObject } from '@/lib/types/user'
+import { BadRequestError } from '@/lib/utils/errors/errors'
+import roleService from '@/lib/services/role.service'
+declare global {
+    namespace Express {
+      interface Request {
+        user: IUser; // Define the type for req.user
+      }
+    }
+  }
+const prepareBrandData = async (name: string, email: string, password: string, brand: IbrandObject, lead_description: string, role_id: string, location: string): Promise<ICreateUser> => {
+    try {
+        const data: IBrand = {
+            title: brand?.title,
+            instagramLink: brand?.instagram_link,
+            brandDescription: brand?.brand_description
+        }
+        const brandData = await brandService.createBrand(data)
+        const hashedPassword = await generateHashPassword(password)
+
+        const Data: ICreateUser = {
+            email: email,
+            firstName: name,
+            password: hashedPassword,
+            role: role_id,
+            brandId: brandData?._id,
+            location: location,
+            leadDescription: lead_description,
+            is_verified: true
+        }
+        return Data
+
+    } catch (error) {
+        console.log(error);
+        throw new Error("Failed to prepare brand data.");
+    }
+}
+const prepareCreatorData = async (email: string, name: string, password: string, location: string, lead_description: string, role_id: string): Promise<ICreateUser> => {
+    try {
+        const hashedPassword = await generateHashPassword(password)
+        const userData = {
+            email: email,
+            firstName: name,
+            password: hashedPassword,
+            role: role_id,
+            location: location,
+            leadDescription: lead_description,
+            is_verified: true
+        }
+        return userData
+    } catch (error) {
+        console.log(error, "ee");
+
+        throw new Error("Failed to prepare brand data.");
+    }
+
+}
+export const registerUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+    try {
+
+        const { firstName, email, password, role_name, brand, location, lead_description } =req.body;
+
+        //check if user already exist
+        const userwithEmail = await userServices.checkUser({
+            email: email,
+            deletedAt: null,
+        })
+        if (userwithEmail) {
+            throw new  BadRequestError("User already registered")
+        }
+
+        //fetch user role data
+        const userRole: IUser = await roleService.FindRoleDetailsByName(role_name)
+        if (!userRole) {
+            throw new BadRequestError("Invalid user role")
+        }
+
+        // prepare user data as per role
+        let userData: ICreateUser | undefined
+        if (role_name === "Creator") {
+            userData = await prepareCreatorData(email, firstName, password, location, lead_description, userRole?._id)
+        }
+        else if (role_name === "Brand") {
+
+            if (brand) {
+                const brandDetails: IBrand = await brandService.findBrandDetails(brand.title)
+                if (brandDetails) {
+                    throw new BadRequestError("Brand Already Registered")
+                }
+                userData = await prepareBrandData(firstName, email, password, brand, lead_description, userRole._id, location)
+            }
+
+        }
+        else {
+            throw new BadRequestError("Invalid request data")
+        }
+        if (!userData) {
+            throw new BadRequestError("Invalid user data")
+        }
+        const createdUserData = await userServices.createUser(userData)
+        sendSuccessResponse(res, 'Success', createdUserData)
+    } catch (error) {
+    console.log(error)
+    next(error)
+  }
+}
 
 
-// export const registerUser = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     const {
-//       first_name,
-//       middle_name,
-//       last_name,
-//       job_title,
-//       email,
-//       phone_number,
-//       password,
-//     }: ICreateUser = req.body
+declare module 'express-serve-static-core' {
+  interface Request {
+    session: {
+      token: string
+      refreshToken: string
+    }
+  }
+}
 
-//     const user = await userServices.getUserByEmail(email)
-//     if (user) throw new BadRequestError('User already registered')
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { email, password } = req.body
 
-//     const hashedPassword: string = await generateHashPassword(password)
+    const user = await userServices.getUserByEmail(email)
+    if (!user) throw new BadRequestError('User not exists')
 
-//     const userData: IUser = {
-//       email: {
-//         value: email,
-//         is_verified: false,
-//       },
-//       first_name: first_name,
-//       middle_name: middle_name,
-//       last_name: last_name,
-//       job_title: job_title,
-//       phone_number: {
-//         value: phone_number,
-//         is_verified: false,
-//       },
-//       password: hashedPassword,
-//     }
+    const isPasswordValid = await validatePassword(password, user?.password)
 
-//     await userServices.createUser(userData)
+    if (!isPasswordValid) throw new BadRequestError("Password doesn't match")
 
-//     sendSuccessResponse(res, 'User created successfully')
-//   } catch (error) {
-//     console.log(error)
-//     next(error)
-//   }
-// }
+    const createUserJWTOptions = {
+      _id: user?._id,
+      email: user?.email,
+    }
 
+    const { jwtToken, refreshToken } = createUserJWT(createUserJWTOptions)
 
-// declare module 'express-serve-static-core' {
-//   interface Request {
-//     session: {
-//       token: string
-//       refreshToken: string
-//     }
-//   }
-// }
+    const sessionOptions = {
+      token: jwtToken,
+      refreshToken: refreshToken,
+    }
+    req.session = sessionOptions
 
-// export const login = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     const { email, password } = req.body
+    sendSuccessResponse(res, 'Logged in successfully', {
+      accessToken: jwtToken,
+      refreshToken,
+      user: user,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
 
-//     const user = await userServices.getUserByEmail(email)
-//     if (!user) throw new BadRequestError('User not exists')
+export const reGenereateToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    interface sessionInterface {
+      token: string
+      refreshToken: string
+    }
 
-//     if (!user?.email?.is_verified && !user?.phone_number?.is_verified)
-//       return res.status(400).json({
-//         errors: { message: 'User not verified', is_verified: false },
-//       })
-//     const isPasswordValid = await validatePassword(password, user?.password)
+    const session = req.session as sessionInterface
+    const body = req.body
+    const refreshToken = body.refreshToken || session.refreshToken
 
-//     if (!isPasswordValid) throw new BadRequestError("Password doesn't match")
+    if (!refreshToken) throw new BadRequestError('No token provided')
+    const decodeValue = verifyJWTToken(refreshToken)
 
-//     const createUserJWTOptions = {
-//       _id: user?._id,
-//       email: user?.email?.value,
-//     }
+    if (typeof decodeValue === 'string')
+      throw new BadRequestError('Invalid token')
+    const user = await userServices.getUserByEmail(decodeValue?.email)
 
-//     const { jwtToken, refreshToken } = createUserJWT(createUserJWTOptions)
+    if (!user) throw new BadRequestError("User doesn't exists")
 
-//     const sessionOptions = {
-//       token: jwtToken,
-//       refreshToken: refreshToken,
-//     }
-//     req.session = sessionOptions
+    const { jwtToken, refreshToken: newRefreshToken } =
+      createUserJWT(decodeValue)
 
-//     sendSuccessResponse(res, 'Logged in successfully', {
-//       accessToken: jwtToken,
-//       refreshToken,
-//       user: user,
-//     })
-//   } catch (error) {
-//     next(error)
-//   }
-// }
+    const sessionOptions = {
+      token: jwtToken,
+      refreshToken: refreshToken,
+    }
+    req.session = sessionOptions
 
-// export const reGenereateToken = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     interface sessionInterface {
-//       token: string
-//       refreshToken: string
-//     }
+    sendSuccessResponse(res, 'Token created', {
+      jwtToken,
+      refreshToken: newRefreshToken,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
 
-//     const session = req.session as sessionInterface
-//     const body = req.body
-//     const refreshToken = body.refreshToken || session.refreshToken
+export const logoutUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    req.session = {
+      refreshToken: '',
+      token: '',
+    }
+    sendSuccessResponse(res, 'Logout success.')
+  } catch (error) {
+    next(error)
+  }
+}
 
-//     if (!refreshToken) throw new BadRequestError('No token provided')
-//     const decodeValue = verifyJWTToken(refreshToken)
-
-//     if (typeof decodeValue === 'string')
-//       throw new BadRequestError('Invalid token')
-//     const user = await userServices.getUserByEmail(decodeValue?.email)
-
-//     if (!user) throw new BadRequestError("User doesn't exists")
-
-//     const { jwtToken, refreshToken: newRefreshToken } =
-//       createUserJWT(decodeValue)
-
-//     const sessionOptions = {
-//       token: jwtToken,
-//       refreshToken: refreshToken,
-//     }
-//     req.session = sessionOptions
-
-//     sendSuccessResponse(res, 'Token created', {
-//       jwtToken,
-//       refreshToken: newRefreshToken,
-//     })
-//   } catch (error) {
-//     next(error)
-//   }
-// }
-
-// export const logoutUser = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     req.session = {
-//       refreshToken: '',
-//       token: '',
-//     }
-//     sendSuccessResponse(res, 'Logout success.')
-//   } catch (error) {
-//     next(error)
-//   }
-// }
-
-// export const me = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const userd:any= req?.user
-
-//     const user: any = await userServices.getUserByEmail(email?.value)
-//     if (!user) throw new BadRequestError("User doesn't exists")
-
-//     const userDetails = {
-//       id: user?._id,
-//       email: user?.email?.value,
-//       name: `${user.first_name}${user.middle_name ? ' ' + user.middle_name : ''} ${user.last_name}`,
-//       job_title: user?.job_title,
-//       role: user?.role
-//         ? {
-//             role: user?.role?.role,
-//             type: user?.role?.type,
-//             _id: user?.role?._id,
-//           }
-//         : { role: 'USER', type: 'USER' },
-//     }
-
-//     sendSuccessResponse(res, 'Success', userDetails)
-//   } catch (error) {
-//     next(error)
-//   }
-// }
+export const me = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email } = req?.user
+      const user: any = await userServices.getUserByEmail(email)
+      if (!user) throw new BadRequestError("User doesn't exists")
+      const sanitizedUserData=await userServices.getSanitizedUserData(user._id)
+      sendSuccessResponse(res, 'Success', sanitizedUserData)
+    } catch (error) {
+      next(error)
+    }
+  }
