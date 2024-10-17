@@ -1,16 +1,17 @@
-import { Response } from 'express';
+
 
 import { interest, IupdateUser, language } from '@/lib/types/user';
 import { updateUser } from '@/lib/services/user.services';
 import { createResponse, createErrorResponse } from '@/lib/utils/apiResponse';
 import { createBulkInterest } from '@/lib/services/interest.services';
 import { createBulkLanguage } from '@/lib/services/language.services';
-
+import { sendSuccessResponse } from '@/lib/utils/responses/success.handler'
+import { NextFunction, Request, Response } from 'express'
 export async function getUser(_req: Request, res: Response) {
 	try {
 		// const { email } = req.user
 		// const user = await userServices.getUserByEmail(email)
-		return createResponse(res, { data: {}, status: 200 });
+		return sendSuccessResponse(res,"success")
 	} catch (error) {
 		return createErrorResponse(res, error);
 	}
