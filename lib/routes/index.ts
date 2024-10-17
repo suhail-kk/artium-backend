@@ -1,7 +1,8 @@
-import express from 'express'
-import { authRoutes } from './auth'
-const router = express.Router()
+import express from 'express';
+const router = express.Router();
 
+import { router as authRoutes } from './auth';
 
-router.use('/auth',authRoutes)
-export { router as routesv1 }
+router.use('/auth', authRoutes);
+
+export { router as routesv1 };

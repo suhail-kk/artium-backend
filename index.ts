@@ -1,13 +1,8 @@
-import {app} from '@/app'
-import { PORT } from '@/lib/constants/envConstants'
-import { connectDB } from './lib/config/db';
-const start = async () => {
-	//Mongoose DB Connection
+import { app } from '@/app';
+import { PORT } from '@/lib/constants/envConstants';
+import connectDB from '@/lib/config/db';
 
-	  await connectDB()
-	  //starting server
-	app.listen(PORT, () => {
-	  console.log(`Listenting to port ${PORT}!✅`)
-	})
-  }
-  start()
+(async function start() {
+	await connectDB();
+	app.listen(PORT, () => console.log(`✅ Listenting to port ${PORT}!`));
+})();

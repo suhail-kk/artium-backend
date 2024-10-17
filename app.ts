@@ -4,13 +4,13 @@ import { routesv1 } from './lib/routes';
 import { NotFoundError } from './lib/utils/errors/errors';
 const app: Express = express();
 
-app.use(
-  cors({
-    credentials: true,
-    origin: '*',
-    optionsSuccessStatus: 200,
-  }),
-);
+// Define the CORS options
+const corsOptions = {
+	credentials: true,
+	origin: ['http://localhost:3000', 'http://localhost:80'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -19,7 +19,7 @@ app.use('/api/v1', routesv1);
 
 // Catch-all for undefined routes
 app.all('*', async (_req: Request, _res: Response, _next: NextFunction) => {
-  throw new NotFoundError(); // This will trigger the errorHandler
+	throw new NotFoundError(); // This will trigger the errorHandler
 });
 
 // Global error handling middleware
@@ -37,6 +37,5 @@ app.use(
 		next(error);
 	}
 );
-
 
 export { app };
