@@ -1,51 +1,19 @@
-import mongoose, { Connection } from 'mongoose';
+import mongoose, { mongo } from 'mongoose'
+import { MONGO_URL } from '@/lib/constants/envConstants'
 
-const MONGODB_URI = process.env.MONGO_URI;
+export async function connectDB() {
+  
+  if (!MONGO_URL) {
+    console.error('MongoDB URI is missing from environment variables');
+    throw new Error('No MONGODB URI');
+  }
 
-if (!MONGODB_URI)
-	throw new Error(
-		'Please define the MONGODB_URI environment variable inside .env.local'
-	);
-
-const uri: string = MONGODB_URI;
-
-// Define an interface for the cached object
-// interface CachedMongoose {
-//     conn: Connection | null;
-//     promise: Promise<Connection> | null;
-// }
-
-// // Using type assertions to define cached variable correctly
-// let cached: CachedMongoose = globalThis.mongoose || { conn: null, promise: null };
-
-// if (!globalThis.mongoose) {
-//     globalThis.mongoose = cached; // Assign the cached object to globalThis.mongoose
-// }
-
-async function dbConnect(): Promise<Connection> {
-	// if (cached.conn) return cached.conn;
-
-	// if (!cached.promise) {
-	const opts = { bufferCommands: false };
-
-	// Create the promise and specify the type
-	// cached.promise =
-	mongoose.set('strictQuery', false);
-	const conn = mongoose.connect(uri, opts).then((mongoose) => {
-		console.log('✅ Connected to MongoDB');
-		return mongoose.connection; // Return the connection
-	});
-	// }
-
-	// try {
-	//     cached.conn = await cached.promise;
-	// } catch (e) {
-	//     cached.promise = null;
-	//     throw e; // Re-throw the error for further handling
-	// }
-
-	// return cached.conn;
-	return conn;
+  try {
+    mongoose.set('strictQuery', false); 
+    await mongoose.connect(MONGO_URL);
+    console.log('MongoDB Database connected successfully!✅✅');
+  } catch (e) {
+    console.error('Error connecting to MongoDB', e);
+    throw e;
+  }
 }
-
-export default dbConnect;
