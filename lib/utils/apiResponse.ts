@@ -12,7 +12,7 @@ const statusMessages: { [key: number]: string } = {
 
 // Function to create a standard response
 export function createResponse(
-	res: Response,
+	res: any,
 	{
 		data,
 		status = 200,
@@ -38,17 +38,13 @@ export function createResponse(
 }
 
 // Function to create a standard error response
-export function createErrorResponse(
-	res: Response,
-	err: unknown,
-	meta?: unknown
-) {
+export function createErrorResponse(res: any, err: unknown, meta?: unknown) {
 	// Convert the error to an object if possible
 	const error = JSON.parse(JSON.stringify(err)) || {};
 	const status = error?.status || 500;
 	const errorMessage =
 		error.message || statusMessages[status] || 'An error occurred';
-
+	console.error(error);
 	res.status(status).json({
 		status,
 		message: errorMessage,
