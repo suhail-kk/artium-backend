@@ -1,13 +1,48 @@
 
 import productServices from '@/lib/services/product.services'
 import campaignServices from '@/lib/services/campaign.services'
-import {createResponse, createErrorResponse } from '@/lib/utils/apiResponse'
+import { createResponse, createErrorResponse } from '@/lib/utils/apiResponse'
 import { NextFunction, Request, Response } from 'express'
+import { v4 as uuidv4 } from 'uuid'
+import { uploadFile } from '@/lib/utils/storage.utils'
 
-export async function createCampaign(req: Request,  res: Response,
+export async function createCampaign(req: Request, res: Response,
     next: NextFunction) {
     try {
-        const body = await req.body
+        const { body } = req.body
+        const data = JSON.parse(body)
+        const images: any = req.files
+        const logo_image = images?.logo_image[0];
+        const product_image = images?.product_image[0];
+
+        let logo_image_key = '';
+        let product_image_key = '';
+
+        console.log('====================================');
+        console.log(logo_image, product_image);
+        console.log('====================================');
+
+        if (logo_image) {
+            const logoUUID = uuidv4()
+
+            logo_image_key = `logo_images/${logoUUID}${logo_image?.filename}`
+            //upload original file in to s3
+            const fileUploadRes = await uploadFile({ source: logo_image.path, targetName: logo_image_key })
+
+            if (!fileUploadRes)
+                return createErrorResponse({ message: 'Failed to upload logo image file' }, 400);
+        }
+
+        if (product_image) {
+            const producutUUID = uuidv4()
+
+            product_image_key = `product_images/${producutUUID}${product_image?.filename}`
+            //upload original file in to s3
+            const fileUploadRes = await uploadFile({ source: product_image.path, targetName: product_image_key })
+
+            if (!fileUploadRes)
+                return createErrorResponse({ message: 'Failed to upload product file' }, 400);
+        }
 
         const {
             campaign_title,
@@ -20,7 +55,6 @@ export async function createCampaign(req: Request,  res: Response,
             video_notes,
             product_url,
             product_title,
-            product_image_key,
             product_description,
             video_types,
             brand_id,
@@ -29,7 +63,7 @@ export async function createCampaign(req: Request,  res: Response,
             min_price,
             max_price,
             video_script,
-        } = body
+        } = data
 
         const productPayload = {
             brand_id,
@@ -59,17 +93,21 @@ export async function createCampaign(req: Request,  res: Response,
             min_price,
             max_price,
             video_script,
+            logo_image_key,
         }
         const retVal = await campaignServices.createCampaign(campaignPayload)
 
-        return  createResponse(res, { data: retVal, status: 200 });
+        return createResponse(res, { data: retVal, status: 200 });
 
     } catch (error) {
+        console.log('====================================');
+        console.log(error);
+        console.log('====================================');
         return createErrorResponse(res, error);
     }
 }
 
-export async function updateCampaign(req: Request,res:Response) {
+export async function updateCampaign(req: Request, res: Response) {
     try {
         const body = await req.body
 
@@ -126,20 +164,21 @@ export async function updateCampaign(req: Request,res:Response) {
             min_price,
             max_price,
             video_script,
+            logo_image_key: "",
         }
         const campaign = await campaignServices.updateCampaign(
             campaign_id,
             campaignPayload
         )
 
-        return  createResponse(res, { data: {data:campaign}, status: 200 });
+        return createResponse(res, { data: { data: campaign }, status: 200 });
 
     } catch (error) {
         return createErrorResponse(res, error);
-}
+    }
 }
 
-export async function deleteCampaign(req: Request,res:Response) {
+export async function deleteCampaign(req: Request, res: Response) {
     try {
         const id = req.query.id as string
 
@@ -149,15 +188,15 @@ export async function deleteCampaign(req: Request,res:Response) {
 
         const response = await campaignServices.deleteCampaign(id)
 
-        return  createResponse(res, { data: response, status: 200 });
+        return createResponse(res, { data: response, status: 200 });
     } catch (error) {
         return createErrorResponse(res, error);
     }
 }
 
-export async function getCampaigns(req: Request,res:Response) {
+export async function getCampaigns(req: Request, res: Response) {
     try {
-    
+
         const search = req.query.search as string
         const limit = parseInt((req.query.limit as string) || '10')
         const page = parseInt((req.query.page as string) || '1')
@@ -169,20 +208,22 @@ export async function getCampaigns(req: Request,res:Response) {
         )
         const totalPages = Math.ceil(count / limit)
 
-        return  createResponse(res, { data: data,
+        return createResponse(res, {
+            data: data,
             meta: {
                 page: page,
                 limit: limit,
                 total: count,
                 totalPages,
-            }, status: 200 })
+            }, status: 200
+        })
 
     } catch (error) {
         return createErrorResponse(res, error);
     }
 }
 
-export async function getCampaignById(req: Request,res:Response) {
+export async function getCampaignById(req: Request, res: Response) {
     try {
         const campaign_id = req.query.id as string
 
@@ -192,11 +233,8 @@ export async function getCampaignById(req: Request,res:Response) {
 
         const retVal = await campaignServices.getCampaignById(campaign_id)
 
-        return  createResponse(res, { data: retVal, status: 200 });
+        return createResponse(res, { data: retVal, status: 200 });
     } catch (error) {
-        console.log('====================================');
-        console.log(error);
-        console.log('====================================');
         return createErrorResponse(res, error);
     }
 }

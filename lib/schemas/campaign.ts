@@ -68,6 +68,9 @@ const campaignsSchema = new mongoose.Schema(
         max_price: {
             type: String,
         },
+        logo_image_key: {
+            type: String,
+        },
     },
     {
         timestamps: true,

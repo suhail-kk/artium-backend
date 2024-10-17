@@ -18,4 +18,5 @@ export interface ICampaign {
     number_of_creators: string
     min_price: string
     max_price: string
+    logo_image_key: string
 }
