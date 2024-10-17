@@ -1,8 +1,7 @@
-import mongoose from 'mongoose'
+import mongoose, { mongo } from 'mongoose'
 import { MONGO_URL } from '@/lib/constants/envConstants'
 
 export async function connectDB() {
-  console.log(MONGO_URL, 'MMM'); // Ensure this logs correctly
   
   if (!MONGO_URL) {
     console.error('MongoDB URI is missing from environment variables');
@@ -10,6 +9,7 @@ export async function connectDB() {
   }
 
   try {
+    mongoose.set('strictQuery', false); 
     await mongoose.connect(MONGO_URL);
     console.log('MongoDB Database connected successfully!✅✅');
   } catch (e) {
