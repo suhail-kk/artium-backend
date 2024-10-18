@@ -1,16 +1,21 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { routesv1 } from './lib/routes';
-import { NotFoundError } from './lib/utils/errors/errors';
+import 'express-async-errors';
+import express, { Express, Request, Response, NextFunction } from 'express';
+
+import { ENV } from '@/lib/config/env';
+import { routesv1 } from '@/lib/routes';
+import { NotFoundError } from '@/lib/utils/errors/errors';
+import { errorHandler } from '@/lib/middlewares/error.middleware';
+
 const app: Express = express();
 
-// Define the CORS options
 const corsOptions = {
 	credentials: true,
-	origin: ['http://localhost:3000', 'http://localhost:80'],
+	origin: ENV.ALLOW_ORIGINS,
 };
 
 app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -18,26 +23,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/v1', routesv1);
 
 // Catch-all for undefined routes
-app.all('*', async (_req: Request, _res: Response, _next: NextFunction) => {
-	console.log(_req.url);
-	_res.send('API Not found');
-	// throw new NotFoundError(); // This will trigger the errorHandler
+app.all('*', (req: Request, res: Response, next: NextFunction) => {
+	next(new NotFoundError()); // Pass error to next middleware (error handler)
 });
 
-// Global error handling middleware
-app.use(
-	'*',
-	(
-		_req: any,
-		_res: any,
-		next: (arg0: { status: number; message: string }) => void
-	) => {
-		const error = {
-			status: 404,
-			message: 'API_ENDPOINT_NOT_FOUND_ERR',
-		};
-		next(error);
-	}
-);
-
+// Global error handler
+app.use(errorHandler as any);
 export { app };
