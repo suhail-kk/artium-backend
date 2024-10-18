@@ -1,13 +1,16 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { routesv1 } from './lib/routes';
-import { NotFoundError } from './lib/utils/errors/errors';
+import express, { Express, Request, Response, NextFunction } from 'express';
+
+import { routesv1 } from '@/lib/routes';
+import { NotFoundError } from '@/lib/utils/errors/errors';
+import { ENV } from './lib/config/env';
+
 const app: Express = express();
 
 // Define the CORS options
 const corsOptions = {
 	credentials: true,
-	origin: ['http://localhost:3000', 'http://localhost:80'],
+	origin: ENV.ALLOW_ORIGINS,
 };
 
 app.use(cors(corsOptions));
