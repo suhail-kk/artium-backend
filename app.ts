@@ -19,7 +19,9 @@ app.use('/api/v1', routesv1);
 
 // Catch-all for undefined routes
 app.all('*', async (_req: Request, _res: Response, _next: NextFunction) => {
-	throw new NotFoundError(); // This will trigger the errorHandler
+	console.log(_req.url);
+	_res.send('API Not found');
+	// throw new NotFoundError(); // This will trigger the errorHandler
 });
 
 // Global error handling middleware
