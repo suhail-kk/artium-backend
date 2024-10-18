@@ -12,42 +12,36 @@ import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 export async function createCampaign(req: Request, res: Response,
     next: NextFunction) {
     try {
-        const { body } = req.body
-        const data = JSON.parse(body)
-        const images: any = req.files
-        const logo_image = images?.logo_image[0];
-        const product_image = images?.product_image[0];
+        const data = req.body
 
-        let logo_image_key = '';
-        let product_image_key = '';
+        // const images: any = req.files || {};
+        // const logo_image = images?.logo_image ? images.logo_image[0] : null;
+        // const product_image = images?.product_image ? images.product_image[0] : null;
 
-        console.log('====================================');
-        console.log(logo_image, product_image);
-        console.log('====================================');
+        const logoUUID = uuidv4()
+        const producutUUID = uuidv4()
+        const logo_image_key = `logo_images/${logoUUID}${data?.logo_image}`
+        const product_image_key = `product_images/${producutUUID}${data?.product_image}`
 
-        if (logo_image) {
-            const logoUUID = uuidv4()
+        // if (logo_image) {
+        //     const logoUUID = uuidv4()
+        //     logo_image_key = `logo_images/${logoUUID}${logo_image?.filename}`
+        //     //upload original file in to s3
+        //     const fileUploadRes = await uploadFile({ source: logo_image.path, targetName: logo_image_key })
+        //     if (!fileUploadRes)
+        //         return new BadRequestError('Failed to upload logo image file');
+        // }
 
-            logo_image_key = `logo_images/${logoUUID}${logo_image?.filename}`
-            //upload original file in to s3
-            const fileUploadRes = await uploadFile({ source: logo_image.path, targetName: logo_image_key })
+        // if (product_image) {
+        //     const producutUUID = uuidv4()
+        //     product_image_key = `product_images/${producutUUID}${product_image?.filename}`
+        //     //upload original file in to s3
+        //     const fileUploadRes = await uploadFile({ source: product_image.path, targetName: product_image_key })
 
-            if (!fileUploadRes)
-                return new BadRequestError('Failed to upload logo image file');
-        }
+        //     if (!fileUploadRes)
+        //         return new BadRequestError('Failed to upload product file');
+        // }
 
-        if (product_image) {
-            const producutUUID = uuidv4()
-
-            product_image_key = `product_images/${producutUUID}${product_image?.filename}`
-            //upload original file in to s3
-            const fileUploadRes = await uploadFile({ source: product_image.path, targetName: product_image_key })
-
-            if (!fileUploadRes)
-
-
-                return new BadRequestError('Failed to upload product file');
-        }
 
         const {
             campaign_title,
@@ -80,6 +74,11 @@ export async function createCampaign(req: Request, res: Response,
 
         const product = await productServices.createProduct(productPayload)
 
+        console.log('====================================');
+        console.log(product);
+        console.log('====================================');
+
+
         const campaignPayload = {
             user_id,
             brand_id,
@@ -101,6 +100,10 @@ export async function createCampaign(req: Request, res: Response,
             logo_image_key,
         }
         const retVal = await campaignServices.createCampaign(campaignPayload)
+
+        console.log('====================================');
+        console.log(retVal);
+        console.log('====================================');
 
         return sendSuccessResponse(res, "Campaign created successfully", retVal);
 

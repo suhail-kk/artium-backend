@@ -1,9 +1,9 @@
 import fs from 'fs'
 import multer from 'multer'
-import s3, { S3_BUCKET } from '@/lib/config/s3.config'
+import s3 from '@/lib/config/s3.config'
 
 const uploadParams: any = {
-  Bucket: S3_BUCKET,
+  Bucket: process.env.AWS_BUCKET_NAME,
   Expires: 86400,
 }
 
@@ -51,7 +51,7 @@ export async function uploadFile(data: UploadFileAttributes) {
   return new Promise((resolve, reject) => {
     if (buffer) {
       const putParams: any = {
-        Bucket: S3_BUCKET,
+        Bucket: process.env.AWS_BUCKET_NAME,
         Key: targetName,
         Body: buffer,
         ContentType: contentType,
@@ -71,7 +71,7 @@ export async function uploadFile(data: UploadFileAttributes) {
       fs.readFile(source, async function (err: any, filedata: any) {
         if (!err) {
           const putParams: any = {
-            Bucket: S3_BUCKET,
+            Bucket: process.env.AWS_BUCKET_NAME,
             Key: targetName,
             Body: filedata,
             ContentType: contentType,
@@ -120,7 +120,7 @@ export const retrieveFile = {
 
 export async function deleteS3Object(key: string): Promise<void> {
   const params: any = {
-    Bucket: S3_BUCKET, // Specify your bucket name
+    Bucket: process.env.AWS_BUCKET_NAME, // Specify your bucket name
     Key: key, // Specify the key of the object you want to delete
   }
 

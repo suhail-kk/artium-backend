@@ -1,19 +1,11 @@
 
-import { multerErrorHandler, upload } from '@/lib/utils/storage.utils'
+import { createCampaignValidator } from '@/lib/rules/validators/campaign';
 import { createCampaign, deleteCampaign, getCampaignById, getCampaigns, updateCampaign } from '@/lib/controllers/campaign/campaign.controller'
 
 const express = require('express');
 const router = express.Router()
 
-router.post('/create', upload.fields([{
-  name: 'logo_image',
-  maxCount: 1
-},
-{
-  name: 'product_image',
-  maxCount: 1
-}
-]), multerErrorHandler, createCampaign)
+router.post('/create', createCampaignValidator(), createCampaign)
 
 
 router.put('/update', updateCampaign)
