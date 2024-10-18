@@ -20,8 +20,7 @@ export async function updateUserProfile(req: any, res: Response) {
 	try {
 		const body: IupdateUser = req.body;
 
-		const userId = '6708c2bdf6efc4f53419d71f';
-		// const userId = req.user
+		const userId = req.user._id;
 
 		let interests: Array<string> = [];
 		let languages: Array<string> = [];
