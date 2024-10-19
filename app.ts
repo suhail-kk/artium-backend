@@ -1,19 +1,20 @@
+import cors from 'cors';
 import 'express-async-errors';
 import express, { Express, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import { routesv1 } from './lib/routes';
-import { NotFoundError } from './lib/utils/errors/errors';
-import { errorHandler } from './lib/middlewares/error.middleware'; // Import your error handler
+
+import { ENV } from '@/lib/config/env';
+import { routesv1 } from '@/lib/routes';
+import { NotFoundError } from '@/lib/utils/errors/errors';
+import { errorHandler } from '@/lib/middlewares/error.middleware';
 
 const app: Express = express();
 
-app.use(
-	cors({
-		credentials: true,
-		origin: '*',
-		optionsSuccessStatus: 200,
-	})
-);
+const corsOptions = {
+	credentials: true,
+	origin: ENV.ALLOW_ORIGINS,
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
