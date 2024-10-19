@@ -1,5 +1,4 @@
-
-import mongoose from "mongoose"
+import mongoose from 'mongoose';
 export enum gender {
 	male = 'Male',
 	female = 'female',
@@ -35,53 +34,55 @@ export interface IupdateUser {
 	city: city;
 	contacts: number[];
 	socialLinks: string[];
-	profileImageKey?: string;
+	profileImage?: {
+		fileName: string;
+		type: string;
+	};
 }
 
 export interface RequestBody {
-    name: string,
-    email: string,
-    password: string,
-    role_name: string,
-    location: string,
-    brand?: {
-        title: string,
-        instagram_link: string,
-        brand_description: string
-    },
-    lead_description: string
+	name: string;
+	email: string;
+	password: string;
+	role_name: string;
+	location: string;
+	brand?: {
+		title: string;
+		instagram_link: string;
+		brand_description: string;
+	};
+	lead_description: string;
 }
 export interface IbrandObject {
-    title: string,
-    instagram_link: string,
-    brand_description: string
+	title: string;
+	instagram_link: string;
+	brand_description: string;
 }
 export interface IUser {
-    email: string,
-    firstName: string,
-    password: string,
-    role: string,
-    brandId?: mongoose.Schema.Types.ObjectId,
-    location: string,
-    leadDescription: string,
-    is_verified: boolean,
-    _id: string
+	email: string;
+	firstName: string;
+	password: string;
+	role: string;
+	brandId?: mongoose.Schema.Types.ObjectId;
+	location: string;
+	leadDescription: string;
+	is_verified: boolean;
+	_id: string;
 }
 export interface ICreateUser {
-    email: string,
-    firstName: string,
-    password: string,
-    role: string,
-    brandId?: mongoose.Schema.Types.ObjectId,
-    location: string,
-    leadDescription: string,
-    _id?: string | undefined,
-    is_verified: boolean
-
+	email: string;
+	firstName: string;
+	password: string;
+	role: string;
+	brandId?: mongoose.Schema.Types.ObjectId;
+	location: string;
+	leadDescription: string;
+	_id?: string | undefined;
+	is_verified: boolean;
 }
 export interface IBrand {
-    _id?: string,
-    title: string,
-    instagramLink: string,
-    brandDescription: string
+	_id?: string;
+	title: string;
+	instagramLink: string;
+	brandDescription: string;
 }

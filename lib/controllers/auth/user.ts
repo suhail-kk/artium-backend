@@ -1,11 +1,15 @@
-import { interest, IupdateUser, language } from '@/lib/types/user';
+import { Request, Response } from 'express';
+
+import s3paths from '@/lib/constants/s3paths';
+import { s3PutURL } from '@/lib/utils/s3utils';
 import { updateUser } from '@/lib/services/user.services';
-import { createResponse, createErrorResponse } from '@/lib/utils/apiResponse';
+import { interest, IupdateUser, language } from '@/lib/types/user';
 import { createBulkInterest } from '@/lib/services/interest.services';
 import { createBulkLanguage } from '@/lib/services/language.services';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
-import { NextFunction, Request, Response } from 'express';
-import { s3PutURL } from '@/lib/utils/s3utils';
+import { createResponse, createErrorResponse } from '@/lib/utils/apiResponse';
+import { getFileExtensionAndCategory } from '@/lib/utils/fileHelper';
+
 export async function getUser(_req: Request, res: Response) {
 	try {
 		// const { email } = req.user
@@ -51,7 +55,12 @@ export async function updateUserProfile(req: any, res: Response) {
 			);
 		}
 
-		if (body.profileImageKey) profilePutURL = s3PutURL(body.profileImageKey);
+		if (body.profileImage)
+			profilePutURL = s3PutURL(
+				s3paths.userProfileImage +
+					userId +
+					getFileExtensionAndCategory(body.profileImage.type).extension
+			);
 
 		const updatedUser = await updateUser(userId, {
 			...body,
