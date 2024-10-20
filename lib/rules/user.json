@@ -1,6 +1,9 @@
 {
-    "about": {
-        "max": 20,
-        "min": 0
-    }
+	"about": {
+		"max": 20,
+		"min": 0
+	},
+	"profileImage": {
+		"max": 2097152
+	}
 }

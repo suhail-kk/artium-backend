@@ -37,6 +37,7 @@ export interface IupdateUser {
 	profileImage?: {
 		fileName: string;
 		type: string;
+		size: number;
 	};
 }
 

@@ -1,4 +1,4 @@
-const userProfileImage = '/user_images/original/';
+const userProfileImage = 'user_images/original/';
 
 export default {
 	userProfileImage,
