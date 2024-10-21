@@ -3,5 +3,9 @@ import { authRoutes } from './auth'
 const router = express.Router()
 
 
-router.use('/auth',authRoutes)
-export { router as routesv1 }
+import { router as commonRoutes } from './common';
+
+router.use('/auth', authRoutes);
+router.use('/common', commonRoutes);
+
+export { router as routesv1 };

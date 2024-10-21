@@ -1,4 +1,4 @@
-import { JWT_KEY } from '@/lib/constants/envConstants';
+import { ENV } from '@/lib/config/env';
 import jsonwebtoken, { JwtPayload } from 'jsonwebtoken';
 import { createUserJWTInterface } from '@/lib/types/createJwt.interface';
 
@@ -17,16 +17,16 @@ export const createUserJWT = (params: createUserJWTInterface | JwtPayload) => {
 		expiresIn: REFRESH_EXPIRES_IN,
 	};
 
-	const jwtToken = jsonwebtoken.sign(jwtBody, JWT_KEY!, jwtTokenOptins);
+	const jwtToken = jsonwebtoken.sign(jwtBody, ENV.JWT_KEY!, jwtTokenOptins);
 	const refreshToken = jsonwebtoken.sign(
 		jwtBody,
-		JWT_KEY!,
+		ENV.JWT_KEY!,
 		refreshTokenOptions
 	);
 	return { jwtToken, refreshToken };
 };
 
 export const verifyJWTToken = (token: string): JwtPayload | string => {
-	const decoded = jsonwebtoken.verify(token, JWT_KEY!);
+	const decoded = jsonwebtoken.verify(token, ENV.JWT_KEY!);
 	return decoded;
 };
