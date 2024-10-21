@@ -16,14 +16,11 @@ export const userUpdateValidator = () => {
 		body('profileImage')
 			.optional()
 			.custom((value) => {
-				if (
-					typeof value.size !== 'number' ||
-					value.size >= userRules.profileImage.max
-				) {
+				if (value.size >= userRules.profileImage.max) {
 					throw new Error('Profile image size to be less than 2 MB');
 				}
 				if (typeof value.type !== 'string') {
-					throw new Error('profileImage.type must be a string');
+					throw new Error('profileImage type must be a string');
 				}
 
 				if (!validImageTypes.includes(value.type)) {

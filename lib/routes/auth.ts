@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-import { updateUserProfile } from '@/lib/controllers/auth/user';
+import { getUser, updateUserProfile } from '@/lib/controllers/auth/user';
 import { userUpdateValidator } from '@/lib/rules/validators/user';
 import {
 	me,
@@ -19,5 +19,7 @@ router.use(authenticateTokenMiddleware);
 
 router.get('/me', authenticateTokenMiddleware, me);
 router.post('/me', userUpdateValidator(), updateUserProfile);
+
+router.get('/user', getUser);
 
 export { router };
