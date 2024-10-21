@@ -8,6 +8,7 @@ import { createErrorResponse } from '@/lib/utils/apiResponse'
 import productServices from '@/lib/services/product.services'
 import campaignServices from '@/lib/services/campaign.services'
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
+import { s3GetURL } from '@/lib/utils/s3utils';
 
 export async function createCampaign(req: Request, res: Response,
     next: NextFunction) {
@@ -22,6 +23,10 @@ export async function createCampaign(req: Request, res: Response,
         const producutUUID = uuidv4()
         const logo_image_key = `logo_images/${logoUUID}${data?.logo_image}`
         const product_image_key = `product_images/${producutUUID}${data?.product_image}`
+
+        console.log('====================================');
+        console.log(logo_image_key, product_image_key);
+        console.log('====================================');
 
         // if (logo_image) {
         //     const logoUUID = uuidv4()
@@ -74,11 +79,6 @@ export async function createCampaign(req: Request, res: Response,
 
         const product = await productServices.createProduct(productPayload)
 
-        console.log('====================================');
-        console.log(product);
-        console.log('====================================');
-
-
         const campaignPayload = {
             user_id,
             brand_id,
@@ -101,11 +101,14 @@ export async function createCampaign(req: Request, res: Response,
         }
         const retVal = await campaignServices.createCampaign(campaignPayload)
 
-        console.log('====================================');
-        console.log(retVal);
-        console.log('====================================');
+        const presigned_url_logo_image = s3GetURL(logo_image_key);
+        const presigned_url_product_image = s3GetURL(product_image_key);
 
-        return sendSuccessResponse(res, "Campaign created successfully", retVal);
+        return sendSuccessResponse(res, "Campaign created successfully", {
+            data: retVal,
+            presigned_url_logo_image,
+            presigned_url_product_image
+        });
 
     } catch (error) {
         return new BadRequestError('Failed to create campaign');

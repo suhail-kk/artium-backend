@@ -1,15 +1,15 @@
-import mongoose, { mongo } from 'mongoose';
-import { MONGO_URL } from '@/lib/constants/envConstants';
+import mongoose from 'mongoose';
+import { ENV } from '@/lib/config/env';
 
 export default async function connectDB() {
-	if (!MONGO_URL) {
+	if (!ENV.MONGO_URI) {
 		console.error('MongoDB URI is missing from environment variables');
 		throw new Error('No MONGODB URI');
 	}
 
 	try {
 		mongoose.set('strictQuery', false);
-		await mongoose.connect(MONGO_URL);
+		await mongoose.connect(ENV.MONGO_URI);
 		console.log('✅ MongoDB connected!');
 	} catch (e) {
 		console.error('Error connecting to MongoDB', e);
