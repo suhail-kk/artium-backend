@@ -5,6 +5,13 @@ interface FileInfo {
 	category: FileCategory;
 }
 
+export const validImageTypes = [
+	'image/jpeg',
+	'image/png',
+	'image/gif',
+	'image/webp',
+];
+
 // Map of MIME types to file extensions and categories
 export const mimeTypeMap: Record<
 	string,

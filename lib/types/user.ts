@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 export enum gender {
-	male = 'Male',
+	male = 'male',
 	female = 'female',
 	other = 'other',
 }
@@ -37,6 +37,7 @@ export interface IupdateUser {
 	profileImage?: {
 		fileName: string;
 		type: string;
+		size: number;
 	};
 }
 

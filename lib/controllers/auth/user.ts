@@ -1,22 +1,26 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 import s3paths from '@/lib/constants/s3paths';
 import { s3PutURL } from '@/lib/utils/s3utils';
-import { updateUser } from '@/lib/services/user.services';
+import { getUserProifleById, updateUser } from '@/lib/services/user.services';
 import { interest, IupdateUser, language } from '@/lib/types/user';
 import { createBulkInterest } from '@/lib/services/interest.services';
 import { createBulkLanguage } from '@/lib/services/language.services';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { createResponse, createErrorResponse } from '@/lib/utils/apiResponse';
 import { getFileExtensionAndCategory } from '@/lib/utils/fileHelper';
+import { BadRequestError } from '@/lib/utils/errors/errors';
 
-export async function getUser(_req: Request, res: Response) {
+export async function getUser(req: Request, res: Response, next: NextFunction) {
 	try {
-		// const { email } = req.user
-		// const user = await userServices.getUserByEmail(email)
-		return sendSuccessResponse(res, 'success');
+		const { _id } = req?.user;
+		// const _id = '67120a2c63617601bf94ea07';
+		const user: any = await getUserProifleById(_id);
+		if (!user) throw new BadRequestError("User doesn't exists");
+		// const sanitizedUserData = await getSanitizedUserData(user._id);
+		sendSuccessResponse(res, 'Success', user[0]);
 	} catch (error) {
-		return createErrorResponse(res, error);
+		next(error);
 	}
 }
 
@@ -25,6 +29,7 @@ export async function updateUserProfile(req: any, res: Response) {
 		const body: IupdateUser = req.body;
 
 		const userId = req.user._id;
+		// const userId = '67120a2c63617601bf94ea07';
 
 		let interests: Array<string> = [];
 		let languages: Array<string> = [];
@@ -34,7 +39,8 @@ export async function updateUserProfile(req: any, res: Response) {
 			let nonExistingInterests: interest[] = [];
 			let existingInterests: interest[] = [];
 			body.interests.forEach((interest) => {
-				if (!interest._id) return nonExistingInterests.push(interest);
+				if (!interest._id && interest.title)
+					return nonExistingInterests.push(interest);
 				existingInterests.push(interest);
 			});
 			const ret = await createBulkInterest(nonExistingInterests);
@@ -46,7 +52,8 @@ export async function updateUserProfile(req: any, res: Response) {
 			let nonExistinglanguages: language[] = [];
 			let existinglanguages: language[] = [];
 			body.languages.forEach((language) => {
-				if (!language._id) return nonExistinglanguages.push(language);
+				if (!language._id && language.title)
+					return nonExistinglanguages.push(language);
 				existinglanguages.push(language);
 			});
 			const ret = await createBulkLanguage(nonExistinglanguages);
@@ -57,9 +64,8 @@ export async function updateUserProfile(req: any, res: Response) {
 
 		if (body.profileImage)
 			profilePutURL = s3PutURL(
-				s3paths.userProfileImage +
-					userId +
-					getFileExtensionAndCategory(body.profileImage.type).extension
+				s3paths.userProfileImage + userId
+				// +getFileExtensionAndCategory(body.profileImage.type).extension
 			);
 
 		const updatedUser = await updateUser(userId, {
