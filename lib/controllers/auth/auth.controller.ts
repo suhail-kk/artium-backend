@@ -135,11 +135,25 @@ export const login = async (
     const { email, password } = req.body
 
     const user = await userServices.getUserByEmail(email)
-    if (!user) throw new BadRequestError('User not exists')
+
+    
+    if (!user) 
+
+      return res.status(400).json({   isError:true,    errors : [
+        {
+            msg: 'User not exist',
+            path: 'email',
+        },
+    ]})
 
     const isPasswordValid = await validatePassword(password, user?.password)
 
-    if (!isPasswordValid) throw new BadRequestError("Password doesn't match")
+    if (!isPasswordValid)    return res.status(400).json({   isError:true,    errors : [
+      {
+          msg: 'Password does not match',
+          path: 'password',
+      },
+  ]})
 
     const createUserJWTOptions = {
       _id: user?._id,

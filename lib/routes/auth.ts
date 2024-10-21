@@ -20,4 +20,4 @@ router.post('/logout',logoutUser)
 router.get('/me', authenticateTokenMiddleware, me);
 router.post('/me', userUpdateValidator(), updateUserProfile);
 
-export { router };
+export { router as authRoutes};
