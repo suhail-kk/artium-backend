@@ -1,7 +1,8 @@
-import express from 'express';
-const router = express.Router();
+import express from 'express'
+import { authRoutes } from './auth'
+const router = express.Router()
 
-import { router as authRoutes } from './auth';
+
 import { router as commonRoutes } from './common';
 
 router.use('/auth', authRoutes);
