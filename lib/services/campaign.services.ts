@@ -194,12 +194,21 @@ const getCampaigns = async (search: string, page: number, limit: number) => {
             },
         },
         {
+            $unwind: {
+                path: "$product_details"
+                // includeArrayIndex: 'string',
+                // preserveNullAndEmptyArrays: boolean
+            }
+        },
+        {
             $addFields: {
                 'product_image': {
                     $cond: {
-                        if: { $in: ['$product_details.product_image_key', ['', null]] },
-                        then: null,
-                        else: s3GetURL('$product_details.product_image_key')
+                        if: [{ $type: "$product_details.product_image_key" }, 'missing'],
+                        // if: { $ne: ['$product_details.product_image_key', undefined] },
+                        // if: { $in: ['$product_details.product_image_key', ['', null]] },
+                        else: null,
+                        then: s3GetURL('$product_details.product_image_key'),
                     }
                 },
             }
@@ -208,13 +217,16 @@ const getCampaigns = async (search: string, page: number, limit: number) => {
             $addFields: {
                 'logo_image': {
                     $cond: {
-                        if: { $in: ['$logo_image_key', ['', null]] },
-                        then: null,
-                        else: s3GetURL('$logo_image_key')
+                        if: [{ $type: "$logo_image_key" }, 'missing'],
+                        // if: { $ne: ['$logo_image_key', undefined] },
+                        // if: { $in: ['$logo_image_key', ['', null]] },
+                        else: null,
+                        then: s3GetURL('$logo_image_key'),
                     }
                 },
             }
-        }
+        },
+
     ]
 
     const res = await Campaign.aggregate([

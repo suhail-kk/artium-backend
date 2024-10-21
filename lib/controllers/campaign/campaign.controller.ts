@@ -101,11 +101,18 @@ export async function createCampaign(req: Request, res: Response,
         // const presigned_url_logo_image = s3GetURL(logo_image_key);
         // const presigned_url_product_image = s3GetURL(product_image_key);
 
+
+
+        console.log('====================================');
+        console.log(logo_image_key, "lllll");
+        console.log('====================================');
+
+
         const presigned_url_logo_image = s3PutURL(
-            s3paths.logoImage
+            logo_image_key
         );
         const presigned_url_product_image = s3PutURL(
-            s3paths.productImage
+            logo_image_key
         );
 
         return sendSuccessResponse(res, "Campaign created successfully", {
