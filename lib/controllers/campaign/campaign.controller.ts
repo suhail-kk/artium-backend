@@ -8,7 +8,8 @@ import { createErrorResponse } from '@/lib/utils/apiResponse'
 import productServices from '@/lib/services/product.services'
 import campaignServices from '@/lib/services/campaign.services'
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
-import { s3GetURL } from '@/lib/utils/s3utils';
+import { s3GetURL, s3PutURL } from '@/lib/utils/s3utils';
+import s3paths from '@/lib/constants/s3paths';
 
 export async function createCampaign(req: Request, res: Response,
     next: NextFunction) {
@@ -23,10 +24,6 @@ export async function createCampaign(req: Request, res: Response,
         const producutUUID = uuidv4()
         const logo_image_key = `logo_images/${logoUUID}${data?.logo_image}`
         const product_image_key = `product_images/${producutUUID}${data?.product_image}`
-
-        console.log('====================================');
-        console.log(logo_image_key, product_image_key);
-        console.log('====================================');
 
         // if (logo_image) {
         //     const logoUUID = uuidv4()
@@ -101,8 +98,15 @@ export async function createCampaign(req: Request, res: Response,
         }
         const retVal = await campaignServices.createCampaign(campaignPayload)
 
-        const presigned_url_logo_image = s3GetURL(logo_image_key);
-        const presigned_url_product_image = s3GetURL(product_image_key);
+        // const presigned_url_logo_image = s3GetURL(logo_image_key);
+        // const presigned_url_product_image = s3GetURL(product_image_key);
+
+        const presigned_url_logo_image = s3PutURL(
+            s3paths.logoImage
+        );
+        const presigned_url_product_image = s3PutURL(
+            s3paths.productImage
+        );
 
         return sendSuccessResponse(res, "Campaign created successfully", {
             data: retVal,

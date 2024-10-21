@@ -2,6 +2,7 @@ import Campaign from '@/lib/schemas/campaign'
 import { ICampaign } from '@/lib/types/campaign.interface'
 import schemaNameConstants from '@/lib/constants/schemaConstants'
 import mongoose from 'mongoose'
+import { s3GetURL } from '../utils/s3utils'
 
 const createCampaign = async (data: ICampaign) => {
     const res = await Campaign.create(data)
@@ -19,6 +20,7 @@ const updateCampaign = async (id: string, data: ICampaign) => {
 }
 
 const getCampaignById = async (id: string) => {
+
     const pipeline = [
         {
             $match: {
@@ -89,6 +91,28 @@ const getCampaignById = async (id: string) => {
                 preserveNullAndEmptyArrays: true,
             },
         },
+        {
+            $addFields: {
+                'product_image': {
+                    $cond: {
+                        if: { $in: ['$product_details.product_image_key', ['', null]] },
+                        then: null,
+                        else: s3GetURL('$product_details.product_image_key')
+                    }
+                },
+            }
+        },
+        {
+            $addFields: {
+                'logo_image': {
+                    $cond: {
+                        if: { $in: ['$logo_image_key', ['', null]] },
+                        then: null,
+                        else: s3GetURL('$logo_image_key')
+                    }
+                },
+            }
+        }
     ]
 
     const res = await Campaign.aggregate(pipeline).exec()
@@ -169,6 +193,28 @@ const getCampaigns = async (search: string, page: number, limit: number) => {
                 preserveNullAndEmptyArrays: true,
             },
         },
+        {
+            $addFields: {
+                'product_image': {
+                    $cond: {
+                        if: { $in: ['$product_details.product_image_key', ['', null]] },
+                        then: null,
+                        else: s3GetURL('$product_details.product_image_key')
+                    }
+                },
+            }
+        },
+        {
+            $addFields: {
+                'logo_image': {
+                    $cond: {
+                        if: { $in: ['$logo_image_key', ['', null]] },
+                        then: null,
+                        else: s3GetURL('$logo_image_key')
+                    }
+                },
+            }
+        }
     ]
 
     const res = await Campaign.aggregate([
