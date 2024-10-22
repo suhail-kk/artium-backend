@@ -13,9 +13,11 @@ export const userUpdateValidator = () => {
 			.withMessage('Email is required')
 			.isEmail()
 			.withMessage('Not a valid email'),
-		body('profileImage')
+		body('profileImage.size')
 			.optional()
 			.custom((value) => {
+				if (!value.size) return true;
+
 				if (value.size >= userRules.profileImage.max) {
 					throw new Error('Profile image size to be less than 2 MB');
 				}

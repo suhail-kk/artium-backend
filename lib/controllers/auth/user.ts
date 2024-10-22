@@ -10,6 +10,7 @@ import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { createResponse, createErrorResponse } from '@/lib/utils/apiResponse';
 import { getFileExtensionAndCategory } from '@/lib/utils/fileHelper';
 import { BadRequestError } from '@/lib/utils/errors/errors';
+import { calculateUserStrength } from '@/lib/utils/helper';
 
 export async function getUser(req: Request, res: Response, next: NextFunction) {
 	try {
@@ -18,7 +19,10 @@ export async function getUser(req: Request, res: Response, next: NextFunction) {
 		const user: any = await getUserProifleById(_id);
 		if (!user) throw new BadRequestError("User doesn't exists");
 		// const sanitizedUserData = await getSanitizedUserData(user._id);
-		sendSuccessResponse(res, 'Success', user[0]);
+		sendSuccessResponse(res, 'Success', {
+			strength: calculateUserStrength(user[0]),
+			...user[0],
+		});
 	} catch (error) {
 		next(error);
 	}
