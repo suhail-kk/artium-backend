@@ -151,7 +151,7 @@ export const login = async (
 
       return res.status(400).json({   isError:true,    errors : [
         {
-            msg: 'User not exist',
+            msg: 'This email is not registered. Please sign up or try again',
             path: 'email',
         },
     ]})
@@ -160,7 +160,7 @@ export const login = async (
 
     if (!isPasswordValid)    return res.status(400).json({   isError:true,    errors : [
       {
-          msg: 'Password does not match',
+          msg: "Invalid password. Please try again.",
           path: 'password',
       },
   ]})
