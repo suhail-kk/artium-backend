@@ -2,14 +2,12 @@ import { NextFunction, Request, Response } from 'express'
 
 import { v4 as uuidv4 } from 'uuid'
 
-import { uploadFile } from '@/lib/utils/storage.utils'
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import { createErrorResponse } from '@/lib/utils/apiResponse'
 import productServices from '@/lib/services/product.services'
 import campaignServices from '@/lib/services/campaign.services'
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
-import { s3GetURL, s3PutURL } from '@/lib/utils/s3utils';
-import s3paths from '@/lib/constants/s3paths';
+import { s3PutURL } from '@/lib/utils/s3utils';
 
 export async function createCampaign(req: Request, res: Response,
     next: NextFunction) {
@@ -101,18 +99,11 @@ export async function createCampaign(req: Request, res: Response,
         // const presigned_url_logo_image = s3GetURL(logo_image_key);
         // const presigned_url_product_image = s3GetURL(product_image_key);
 
-
-
-        console.log('====================================');
-        console.log(logo_image_key, "lllll");
-        console.log('====================================');
-
-
         const presigned_url_logo_image = s3PutURL(
             logo_image_key
         );
         const presigned_url_product_image = s3PutURL(
-            logo_image_key
+            product_image_key
         );
 
         return sendSuccessResponse(res, "Campaign created successfully", {

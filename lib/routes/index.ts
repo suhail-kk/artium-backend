@@ -1,8 +1,7 @@
-import express from 'express'
-import { authRoutes } from './auth'
-const router = express.Router()
+import express from 'express';
+const router = express.Router();
 
-
+import { router as authRoutes } from './auth';
 import { router as commonRoutes } from './common';
 import { router as DbSeedersRoutes } from './dbSeed';
 import { router as CampaignRoutes } from './campaign/campaign.routes';

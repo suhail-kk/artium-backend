@@ -35,7 +35,7 @@ const checkUser = async (data: checkUser) => {
 }
 
 const getSanitizedUserData = async (id: unknown) => {
-    const user = await User.findOne({ _id: id }).populate('role').select('name email role')
+    const user = await User.findOne({ _id: id }).populate('role').select('firstName lastName email role  ')
     return user?.toJSON()
 }
 
