@@ -1,0 +1,1 @@
+export const CAMPAIGN_STATUS = ['Ongoing', 'Completed']
