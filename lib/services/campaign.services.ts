@@ -225,10 +225,123 @@ const deleteCampaign = async (_id: string) => {
     return res
 }
 
+const getUserCampaigns = async (user_id: string, search: string, page: number, limit: number) => {
+    try {
+        const searchRegex = new RegExp(search, 'i')
+        const pipeline = [
+            {
+                $match: {
+                    user_id: new mongoose.Types.ObjectId(user_id),
+                    $or: [{ campaign_title: searchRegex }],
+                },
+            },
+            {
+                $lookup: {
+                    from: schemaNameConstants.userSchema,
+                    localField: 'user_id',
+                    foreignField: '_id',
+                    as: 'user_details',
+                },
+            },
+            {
+                $lookup: {
+                    from: schemaNameConstants.brandSchema,
+                    localField: 'brand_id',
+                    foreignField: '_id',
+                    as: 'brand_details',
+                },
+            },
+            {
+                $lookup: {
+                    from: schemaNameConstants.productSchema,
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'product_details',
+                },
+            },
+            {
+                $lookup: {
+                    from: schemaNameConstants.deliveryTypeSchema,
+                    localField: 'delivery_type',
+                    foreignField: '_id',
+                    as: 'delivery_type_details',
+                },
+            },
+            {
+                $lookup: {
+                    from: schemaNameConstants.videoTypeSchema,
+                    localField: 'video_types',
+                    foreignField: '_id',
+                    as: 'video_types_details',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$user_details',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $unwind: {
+                    path: '$brand_details',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $unwind: {
+                    path: '$product_details',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $unwind: {
+                    path: '$delivery_type_details',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+        ]
+
+        const res = await Campaign.aggregate([
+            ...pipeline,
+            {
+                $skip: (page - 1) * limit,
+            },
+            {
+                $limit: limit,
+            },
+            {
+                $sort: { createdAt: -1 },
+            },
+        ])
+        const count = await Campaign.aggregate([
+            ...pipeline,
+            {
+                $count: 'total',
+            },
+        ])
+
+        const campaignsWithSignedUrl = res.map(campaign => {
+            if (campaign?.product_details?.product_image_key || campaign?.logo_image_key) {
+                campaign.product_image_url = s3GetURL(campaign?.product_details?.product_image_key);
+                campaign.logo_image_url = s3GetURL(campaign?.logo_image_key);
+            }
+            return campaign;
+        });
+
+        return {
+            data: campaignsWithSignedUrl,
+            count: count[0]?.total,
+        }
+    } catch (error) {
+        console.error("Error fetching user campaigns:", error);
+        throw error;
+    }
+}
 export default {
     createCampaign,
     getCampaignById,
     updateCampaign,
     getCampaigns,
     deleteCampaign,
+    getUserCampaigns
 }
