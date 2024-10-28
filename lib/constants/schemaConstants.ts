@@ -10,6 +10,8 @@ const deliveryTypeSchema = 'deliverytypes'
 const videoTypeSchema = 'videotypes'
 const creatorsCount = 'creatorscount'
 const campaignsSchema = 'Campaign'
+const conversationSchema='Conversations'
+const messageSchema='messages'
 export default {
     userSchema,
     otpSchema,
@@ -23,4 +25,6 @@ export default {
     videoTypeSchema,
     creatorsCount,
     campaignsSchema,
+    conversationSchema,
+    messageSchema
 }
