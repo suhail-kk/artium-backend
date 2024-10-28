@@ -6,14 +6,26 @@ import { validImageTypes } from '@/lib/utils/fileHelper';
 
 export const userUpdateValidator = () => {
 	return validateParams([
-		body('firstName').notEmpty().withMessage('First name is required'),
-		body('lastName').notEmpty().withMessage('Last name is required'),
+		body('firstName')
+			.notEmpty()
+			.withMessage('First name is required')
+			.isLength({ max: userRules.name.max })
+			.withMessage(`First name not to exceed ${userRules.name.max} characters`),
+		body('lastName')
+			.notEmpty()
+			.withMessage('Last name is required')
+			.isLength({ max: userRules.name.max })
+			.withMessage(`Last name not to exceed ${userRules.name.max} characters`),
+		body('about')
+			.optional()
+			.isLength({ max: userRules.about.max })
+			.withMessage(`about should be within ${userRules.about.max} characters`),
 		body('email')
 			.notEmpty()
 			.withMessage('Email is required')
 			.isEmail()
 			.withMessage('Not a valid email'),
-		body('profileImage.size')
+		body('profileImage')
 			.optional()
 			.custom((value) => {
 				if (typeof value == 'object') {

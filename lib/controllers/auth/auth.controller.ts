@@ -3,7 +3,7 @@ import {
 	generateHashPassword,
 	validatePassword,
 } from '@/lib/utils/passwordUtils';
-import userServices from '@/lib/services/auth.services';
+import userServices, { getUserMe } from '@/lib/services/auth.services';
 import { ICreateUser } from '@/lib/types/user';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { createUserJWT, verifyJWTToken } from '@/lib/utils/jwtUtils';
@@ -294,11 +294,10 @@ export const logoutUser = async (
 
 export const me = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const { email } = req?.user;
-		const user: any = await userServices.getUserByEmail(email);
+		const { _id } = req?.user;
+		const user: any = await getUserMe(_id);
 		if (!user) throw new BadRequestError("User doesn't exists");
-		const sanitizedUserData = await userServices.getSanitizedUserData(user._id);
-		sendSuccessResponse(res, 'Success', sanitizedUserData);
+		sendSuccessResponse(res, 'Success', user[0]);
 	} catch (error) {
 		next(error);
 	}
