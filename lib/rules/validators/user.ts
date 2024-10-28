@@ -16,19 +16,18 @@ export const userUpdateValidator = () => {
 		body('profileImage.size')
 			.optional()
 			.custom((value) => {
-				if (!value.size) return true;
-
-				if (value.size >= userRules.profileImage.max) {
-					throw new Error('Profile image size to be less than 2 MB');
-				}
-				if (typeof value.type !== 'string') {
-					throw new Error('profileImage type must be a string');
-				}
-
-				if (!validImageTypes.includes(value.type)) {
-					throw new Error(
-						'Invalid image type. Allowed types are: jpeg, png, gif, webp'
-					);
+				if (typeof value == 'object') {
+					if (value.size >= userRules.profileImage.max) {
+						throw new Error('Profile image size to be less than 2 MB');
+					}
+					if (typeof value.type !== 'string') {
+						throw new Error('profileImage type must be a string');
+					}
+					if (!validImageTypes.includes(value.type)) {
+						throw new Error(
+							'Invalid image type. Allowed types are: jpeg, png, gif, webp'
+						);
+					}
 				}
 				return true;
 			}),
