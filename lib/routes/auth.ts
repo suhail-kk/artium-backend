@@ -17,7 +17,7 @@ router.post('/generate-token', reGenereateToken);
 
 router.use(authenticateTokenMiddleware);
 
-router.get('/me', authenticateTokenMiddleware, me);
+router.get('/me', me);
 router.post('/me', userUpdateValidator(), updateUserProfile);
 
 router.get('/user', getUser);
