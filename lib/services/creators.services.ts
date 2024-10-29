@@ -1,9 +1,9 @@
+import mongoose from "mongoose";
 import User from "@/lib/schemas/user";
 import roles from "@/lib/schemas/roles";
+import s3paths from "@/lib/constants/s3paths";
+import { s3GetURL } from "@/lib/utils/s3utils";
 import schemaNameConstants from '@/lib/constants/schemaConstants'
-import mongoose from "mongoose";
-import { s3GetURL } from "../utils/s3utils";
-import s3paths from "../constants/s3paths";
 
 const getRoles = async () => {
     const res = roles.find()
@@ -19,6 +19,7 @@ const getCreators = async ({
     languages,
     min_age,
     max_age,
+    userId
 }: {
     search: string;
     page: number;
@@ -28,6 +29,7 @@ const getCreators = async ({
     languages?: string;
     min_age?: number;
     max_age?: number;
+    userId: string
 }) => {
 
     let filter
@@ -66,14 +68,14 @@ const getCreators = async ({
     };
 
 
-
-
-
-    const pipeline = [
+    const pipeline: any[] = [
         {
             $match: {
                 ...(filter),
             },
+        },
+        {
+            $sort: { createdAt: -1 },
         },
         {
             $lookup: {
@@ -103,12 +105,21 @@ const getCreators = async ({
             {
                 $limit: limit,
             },
-            {
-                $sort: { createdAt: -1 },
-            },
+
             {
                 $addFields: {
                     profileImageOriginal: s3GetURL(s3paths.userProfileImage + "$_id"),
+                },
+            },
+            {
+                $addFields: {
+                    isLiked: {
+                        $cond: {
+                            if: { $isArray: "$savedUsers" },
+                            then: { $in: [userId, "$savedUsers"] },
+                            else: false,
+                        },
+                    },
                 },
             },
         ]
@@ -127,6 +138,28 @@ const getCreators = async ({
     };
 };
 
+const saveACreator = async (id: string, userId: string) => {
+    const res = await User.findByIdAndUpdate(
+        {
+            _id: id,
+        },
+        { $addToSet: { savedUsers: userId } },
+        { new: true }
+    )
+    return res
+}
+
+const removeASavedCreator = async (id: string, userId: string) => {
+    const res = await User.findByIdAndUpdate(
+        {
+            _id: id,
+        },
+        { $pull: { savedUsers: userId } },
+        { new: true }
+    )
+    return res
+}
 
 
-export default { getCreators }
+
+export default { getCreators, saveACreator, removeASavedCreator }

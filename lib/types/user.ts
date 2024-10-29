@@ -32,6 +32,7 @@ export interface IupdateUser {
 	interests: interest[];
 	languages: language[];
 	city: city;
+	savedUsers: string[];
 	contacts: number[];
 	socialLinks: string[];
 	profileImage?: {
