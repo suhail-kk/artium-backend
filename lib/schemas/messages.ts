@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 const { Schema, Document } = mongoose;
 import schemaNameConstants from '@/lib/constants/schemaConstants';
+import { retrieveFile } from "../utils/storage.utils";
 
 
 export interface Offer{
@@ -9,13 +10,13 @@ export interface Offer{
     status:string
 }
 const offerTypeEnum = Object.freeze({
-    OFFER: "offer",
-    TEXT: "text",
-    FILE: "file",
+    OFFER: "Offer",
+    TEXT: "Text",
+    FILE: "Video",
   });
 export interface MessageAttributes {
   chat_id?: mongoose.Types.ObjectId;
-  sender_id: number;
+  sender_id: mongoose.Schema.Types.ObjectId;
   message?: string;
   file?: string;
   file_type?: string;
@@ -36,7 +37,7 @@ export interface MessageAttributes {
 const messageSchema = new Schema<MessageAttributes>(
   {
     chat_id: mongoose.Types.ObjectId,
-    sender_id: { type: Number, ref: "user", required: true },
+    sender_id: { type: Schema.Types.ObjectId, ref: "users"},
     message: String,
     file: String,
     file_type: String,
@@ -60,7 +61,7 @@ const messageSchema = new Schema<MessageAttributes>(
         amount:Number,
         status:{
           type:String,
-          default:'PENDING'}
+         }
       }
   },
   {
@@ -70,6 +71,11 @@ const messageSchema = new Schema<MessageAttributes>(
     toObject: { virtuals: true },
   }
 );
+
+messageSchema.virtual("url").get(function () {
+  if (this.file) return retrieveFile.publicUrl(this.file);
+  return null;
+});
 
 export default mongoose.models[schemaNameConstants?.messageSchema] ||
 	mongoose.model(schemaNameConstants?.messageSchema, messageSchema);

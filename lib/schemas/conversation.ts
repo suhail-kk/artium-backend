@@ -28,7 +28,7 @@ const typeEnum = Object.freeze({
 
 const conversationSchema = new Schema<conversationsAttributes>(
   {
-    // participants: [{ type: Number, required: true, ref: 'user' }], // old
+
     participants: [],
     conversation_name: {
       type: String,
@@ -41,13 +41,12 @@ const conversationSchema = new Schema<conversationsAttributes>(
     unreadBy: [],
     deletedBy: [
       {
-        userId: { type: Number, ref: "user" },
+        userId: { type: Number, ref: "users" },
         deletedAt: { type: Date },
         status: { type: Boolean },
       },
     ],
     latestMessageId: { type: mongoose.Types.ObjectId, ref: "messages" },
-    latestMessageCreatedAt: { type: Date },
   },
   {
     timestamps: true,
@@ -59,4 +58,4 @@ const conversationSchema = new Schema<conversationsAttributes>(
 
 conversationSchema.index({ participants: 1, latestMessageCreatedAt: -1 });
 export default mongoose.models[schemaNameConstants?.conversationSchema] ||
-	mongoose.model(schemaNameConstants?.userSchema, conversationSchema);
+	mongoose.model(schemaNameConstants?.conversationSchema, conversationSchema);
