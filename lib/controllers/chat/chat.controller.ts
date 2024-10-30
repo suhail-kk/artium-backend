@@ -14,13 +14,15 @@ import {
   createParticipants,
   findMessageById,
   getRecentConversations,
-  updateOffer
+  updateOffer,
+  markAllMessagesRead
 } from "@/lib/services/chat.services";
 import {OFFER_STATUSES} from '@/lib/constants/constants'
 import conversation,{IParticipant} from "@/lib/schemas/conversation";
 import { BadRequestError } from "@/lib/utils/errors/errors";
 import {createS3FileKey} from '@/lib/utils/fileHelper'
 import {ParticipantRequestData} from '@/lib/types/chat.interface'
+
 
 export const createChat = async (req: Request, res: Response) => {
   try {
@@ -349,4 +351,20 @@ export const updateOfferStatus=async(	req: Request,
     console.log("ERROR at chat controller::",error);
     throw new BadRequestError("Something went wrong")
   } 
+}
+
+export const markAllRead=async(req:Request,res:Response)=>{
+  try{
+
+    const userId=req?.user?._id
+    const chat_id=req?.query?.chat_id as string
+    if(!chat_id){
+      throw new BadRequestError("Invalid conversation id")
+    }
+
+    await markAllMessagesRead(chat_id,userId)
+    res.status(200).json({message:"Message mark as read succesfully"})
+  }catch(error){
+    throw new BadRequestError("something went wrong")
+  }
 }

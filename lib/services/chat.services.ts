@@ -492,3 +492,16 @@ export const getUnreadMessagesCount = async (chatId: string,userId:string) => {
     throw new Error("Failed to fetch unread messages count.");
   }
 };
+
+export const markAllMessagesRead = async (chatId:string,userId:string) => {
+
+    return await messages.updateMany(
+      {
+        chat_id: new mongoose.Types.ObjectId(chatId),
+        seen: false,
+        sender_id: { $ne: new mongoose.Types.ObjectId(userId) },
+      },
+      { $set: { seen: true } }
+    );
+
+  }
