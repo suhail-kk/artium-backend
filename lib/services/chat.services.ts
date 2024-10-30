@@ -6,6 +6,7 @@ import messages from "@/lib/schemas/messages";
 
 import { s3GetURL } from '../utils/s3utils';
 import s3paths from '../constants/s3paths';
+
 export const createMessage = async (data: MessageAttributes) => {
   return await Messages.create(data);
 };
@@ -138,13 +139,43 @@ export const getRecentConversations = async (
       as: "brandParticipants",
     },
   },
-
-  
+  {
+    $lookup: {
+      from: "messages",
+      let: { chatId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$chat_id", "$$chatId"] },
+                { $eq: ["$seen", false] },
+                { $ne: ["$sender_id", new mongoose.Types.ObjectId(userId)] },
+              ],
+            },
+          },
+        },
+        { $count: "unreadCount" },
+      ],
+      as: "unreadMessages",
+    },
+  },
+  {
+    $addFields: {
+      unreadCount: { $ifNull: [{ $arrayElemAt: ["$unreadMessages.unreadCount", 0] }, 0] }
+    },
+  },
   {
     $addFields: {
       participantsData: {
         $map: {
-          input: "$participants",
+          input: {
+            $filter: {
+              input: "$participants",
+              as: "participant",
+              cond: { $ne: ["$$participant.id", new mongoose.Types.ObjectId(userId)] },
+            },
+          },
           as: "participant",
           in: {
             $mergeObjects: [
@@ -174,6 +205,11 @@ export const getRecentConversations = async (
                     then: s3GetURL(s3paths.userProfileImage + "$$participant._id"), // Add the profile image URL
                     else: null, // Or set to null if it's not a User
                   },
+                },
+              },
+              {
+
+                  unreadCount: { $arrayElemAt: ["$unreadMessages.unreadCount", 0] 
                 },
               },
             ],
@@ -233,6 +269,7 @@ export const getRecentConversations = async (
           participants: "$participantsData",
           campaign:"$campaign",
           campaignImageUrl:'$campaignImageOriginal',
+          unreadCount:'$unreadCount',
           latestMessage: {
             $cond: {
               if: { $eq: ["$latestMessageData.isDeleted", true] },
@@ -265,13 +302,14 @@ export const getRecentConversations = async (
       }
     );
 
-
     // Execution 
     const result = await ConversationModel.aggregate(pipeline);
     return {
       conversations: result[0]?.documents || [],
       totalPages: Math.ceil((result[0]?.total || 0) / pageSize),
     };
+
+    
   } catch (error) {
     console.log("Error in getRecentConversations:", error);
     throw new Error("Failed to fetch recent conversations.");
@@ -432,3 +470,25 @@ export const updateOffer=async(id:string,status:string)=>{
     $set:{"offer.status":status}
   })
 }
+export const getUnreadMessagesCount = async (chatId: string,userId:string) => {
+  try {
+    const pipeline = [
+      {
+        $match: {
+          "chat_id": new mongoose.Types.ObjectId(chatId),
+          "seen": false,
+          "sender_id":{$ne:new mongoose.Types.ObjectId(userId)}
+        },
+      },
+      {
+        $count: "unreadCount",
+      },
+    ];
+
+    const result = await Messages.aggregate(pipeline);
+    return result[0]?.unreadCount || 0;
+  } catch (error) {
+    console.error("Error fetching unread messages count:", error);
+    throw new Error("Failed to fetch unread messages count.");
+  }
+};
