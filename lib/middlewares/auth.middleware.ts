@@ -16,7 +16,7 @@ export const authenticateTokenMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> => {
   try {
     const authorization: any = req.headers.authorization
     if (!authorization) throw new NotAuthorizedError()
@@ -41,7 +41,7 @@ export const authenticateTokenMiddleware = async (
     next()
   } catch (error: any) {
     if (error?.name === 'TokenExpiredError') {
-      return res.status(498).json({ message: 'Token expired' })
+       res.status(498).json({ message: 'Token expired' })
     }
     throw new BadRequestError(error.message)
   }
