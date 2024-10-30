@@ -200,6 +200,7 @@ export const listConversations = async (req: Request, res: Response) => {
       size,
       query
     );
+
     res.status(200).json({
       data: conversations,
       meta: {
@@ -220,11 +221,13 @@ export const listMessages = async (req: Request, res: Response) => {
     const size: number = Number(req.query.size) || 30;
     const chat_id = (req.query.chat_id as string) || undefined;
     const body = req.body;
-    const data = JSON.parse(body.data);
-  const {participants,      campaignId}=data
+    
+    const data = body?.data
+    const participants=data?.participants
   if (!chat_id && !participants) {
     return res.status(400).json("Please include the reciever");
   }
+
   const participantsArray = participants?.map((participant: ParticipantRequestData) => ({
     id: new mongoose.Types.ObjectId(participant?.id),
     type: participant?.type,
@@ -241,16 +244,7 @@ export const listMessages = async (req: Request, res: Response) => {
 
       if (conversation) {
         chatId = conversation._id;
-      } else {
-        const data = {
-          participants: participantsArray,
-          name: null,
-          type: "one-to-one",
-          campaignId:campaignId
-        };
-        const createdParticipants = await createParticipants(data);
-        chatId = createdParticipants?.id;
-      }
+      } 
     }
     if (!chatId) {
       throw new BadRequestError("invalid chat Id")
