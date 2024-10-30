@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 const { Schema, Document } = mongoose;
 import schemaNameConstants from '@/lib/constants/schemaConstants';
 import { retrieveFile } from "../utils/storage.utils";
-
+import User from "./user";
 
 export interface Offer{
     brief:string,
@@ -15,14 +15,15 @@ const offerTypeEnum = Object.freeze({
     FILE: "Video",
   });
 export interface MessageAttributes {
-  chat_id?: mongoose.Types.ObjectId;
-  sender_id: mongoose.Schema.Types.ObjectId;
+  _id?:mongoose.Schema.Types.ObjectId,
+  chat_id?: mongoose.Schema.Types.ObjectId;
+  sender_id?: mongoose.Types.ObjectId;
   message?: string;
   file?: string;
   file_type?: string;
   is_uploaded?: boolean;
   is_forwarded?: boolean | null;
-  reply_To?: number | null;
+  reply_To?: MessageAttributes;
   seen?: boolean;
   createdAt?: Date;
   updateAt?: Date;
@@ -30,8 +31,10 @@ export interface MessageAttributes {
   thumbnail_url?: string | null;
   video_url?: string | null;
   stream_url?: string | null;
-  type:string ;
-  offer?:Offer
+  type?:string ;
+  offer?:Offer;
+  parentOfferId?:mongoose.Schema.Types.ObjectId;
+  ss?:typeof User
 }
 
 const messageSchema = new Schema<MessageAttributes>(
@@ -62,6 +65,10 @@ const messageSchema = new Schema<MessageAttributes>(
         status:{
           type:String,
          }
+      },
+      parentOfferId:{
+        type: Schema.Types.ObjectId,
+        ref:schemaNameConstants.messageSchema
       }
   },
   {

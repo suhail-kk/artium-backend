@@ -1,9 +1,11 @@
 import Messages, { MessageAttributes } from "@/lib/schemas/messages";
-import ConversationModel, {
-  conversationsAttributes,
+import ConversationModel, {conversationsAttributes
 } from "@/lib/schemas/conversation";
 import mongoose from "mongoose";
 import messages from "@/lib/schemas/messages";
+
+import { s3GetURL } from '../utils/s3utils';
+import s3paths from '../constants/s3paths';
 export const createMessage = async (data: MessageAttributes) => {
   return await Messages.create(data);
 };
@@ -16,7 +18,7 @@ export const createParticipants = async (data: conversationsAttributes) => {
   return await ConversationModel.create(data);
 };
 export const findConversationByParticipants = async (
-  participant_ids: Array<mongoose.Schema.Types.ObjectId>
+  participant_ids: any
 ) => {
   try {
     const conversation = await ConversationModel.findOne({
@@ -47,7 +49,7 @@ export const findConversationByParticipants = async (
 
 export const findMessageById = async (message_id: string) => {
   try {
-    const messageDetails: any = await Messages.findOne({ _id: message_id })
+    const messageDetails:  MessageAttributes = await Messages.findOne({ _id: message_id })
       .populate({
         path: "sender_id",
         model: "users",
@@ -64,8 +66,8 @@ export const findMessageById = async (message_id: string) => {
         },
       })
       .exec();
-
-    const { _id, reply_To, sender_id, ...rest } = messageDetails.toJSON();
+  
+    const { _id, reply_To, sender_id, ...rest } = messageDetails
     const parent = reply_To
       ? { id: reply_To._id, sender: reply_To.sender_id, ...reply_To }
       : null;
@@ -73,10 +75,10 @@ export const findMessageById = async (message_id: string) => {
     return {
       id: _id,
       sender: sender_id,
-      sender_id: sender_id.userId,
+      sender_id: reply_To?.sender_id,
       parent,
       ...rest,
-    };
+    } 
   } catch (error) {
     console.log(error, "error");
   }
@@ -103,29 +105,83 @@ export const getRecentConversations = async (
   userId: string,
   page: number,
   pageSize: number,
-  searchValue: string
+  searchValue: string|undefined
 ) => {
+
   try {
-    const pipeline = [
+
+    const pipeline: any = [
       {
         $match: {
-          participants: new mongoose.Types.ObjectId(userId),
+          participants: {
+            $elemMatch: {
+              id: new mongoose.Types.ObjectId(userId),
+            },
+          },
         },
       },
-      {
-        $lookup: {
-          from: "users",
-          localField: "participants",
-          foreignField: "_id",
-          as: "participantsData",
+    
+  {
+    $lookup: {
+      from: "users",
+      localField: "participants.id",
+      foreignField: "_id",
+      as: "userParticipants",
+    },
+  },
+
+  {
+    $lookup: {
+      from: "brands",
+      localField: "participants.id",
+      foreignField: "_id",
+      as: "brandParticipants",
+    },
+  },
+
+  
+  {
+    $addFields: {
+      participantsData: {
+        $map: {
+          input: "$participants",
+          as: "participant",
+          in: {
+            $mergeObjects: [
+              "$$participant",
+              {
+                $arrayElemAt: [
+                  {
+                    $filter: {
+                      input: {
+                        $cond: {
+                          if: { $eq: ["$$participant.type", "Brand"] },
+                          then: "$brandParticipants",
+                          else: "$userParticipants",
+                        },
+                      },
+                      as: "details",
+                      cond: { $eq: ["$$details._id", "$$participant.id"] },
+                    },
+                  },
+                  0,
+                ],
+              },
+              {
+                profileImageOriginal: {
+                  $cond: {
+                    if: { $eq: ["$$participant.type", "Creator"] }, // Check if the type is User
+                    then: s3GetURL(s3paths.userProfileImage + "$$participant._id"), // Add the profile image URL
+                    else: null, // Or set to null if it's not a User
+                  },
+                },
+              },
+            ],
+          },
         },
       },
-      {
-        $unwind: {
-          path: "$participantsData",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
+    },
+  },
       {
         $lookup: {
           from: "messages",
@@ -141,20 +197,47 @@ export const getRecentConversations = async (
         },
       },
       {
-        $match: {
-          "participantsData.firstName": {
-            $regex: new RegExp(searchValue, "i"),
-          },
+        $lookup: {
+          from: "campaigns",
+          localField: "campaignId",
+          foreignField: "_id",
+          as: "campaign",
         },
       },
       {
+        $addFields: {
+          campaignImageOriginal: s3GetURL(s3paths.campaignLogoImage + 'campaignId'),
+        },
+      }
+    ];
+
+    //  search 
+    if (searchValue) {
+      pipeline.push({
+        
+          $match: {
+            $or: [
+              { "participantsData.firstName": { $regex: new RegExp(searchValue, "i") } },
+              { "participantsData.title": { $regex: new RegExp(searchValue, "i") } },
+            ],
+          },
+
+      },
+      );
+    }
+
+    //  projection, grouping, and pagination stages
+    pipeline.push(
+      {
         $project: {
           participants: "$participantsData",
+          campaign:"$campaign",
+          campaignImageUrl:'$campaignImageOriginal',
           latestMessage: {
             $cond: {
               if: { $eq: ["$latestMessageData.isDeleted", true] },
-              then: {}, // Empty object if isDeleted is true
-              else: "$latestMessageData", // Otherwise, use the latestMessageData
+              then: {}, 
+              else: "$latestMessageData",
             },
           },
           _id: 1,
@@ -164,7 +247,6 @@ export const getRecentConversations = async (
           unreadBy: 1,
         },
       },
-
       {
         $group: {
           _id: null,
@@ -180,18 +262,22 @@ export const getRecentConversations = async (
             $slice: ["$documents", (page - 1) * pageSize, pageSize],
           },
         },
-      },
-    ];
-    // Execute the pipeline
+      }
+    );
+
+
+    // Execution 
     const result = await ConversationModel.aggregate(pipeline);
     return {
       conversations: result[0]?.documents || [],
-      totalPages: result[0]?.total || 0,
+      totalPages: Math.ceil((result[0]?.total || 0) / pageSize),
     };
   } catch (error) {
-    console.log(error);
+    console.log("Error in getRecentConversations:", error);
+    throw new Error("Failed to fetch recent conversations.");
   }
 };
+
 
 export const findConversationById = async (chat_id: string) => {
   try {
@@ -335,9 +421,14 @@ export const getMessagesCount = async (chatId: string) => {
     return 0;
   }
 };
-export const updateMessage = async (data: any, id: any) => {
+export const updateMessage = async (data: MessageAttributes, id: string) => {
   return await messages.updateOne(
-    { _id: new mongoose.Types.ObjectId() },
+    { _id: new mongoose.Types.ObjectId(id) },
     { $set: data }
   );
 };
+export const updateOffer=async(id:string,status:string)=>{
+  return await messages.updateOne({_id:new mongoose.Types.ObjectId(id)},{
+    $set:{"offer.status":status}
+  })
+}

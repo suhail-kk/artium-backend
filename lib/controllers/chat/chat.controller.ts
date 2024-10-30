@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { NextFunction, Request, Response } from 'express';
 import { S3_BUCKET } from "@/lib/config/s3.config";
 import s3 from "@/lib/config/s3.config";
 import pusherServer from "@/lib/config/pusher.config";
@@ -10,20 +11,22 @@ import {
   getMessagesWithUser,
   createMessage,
   findConversationByParticipants,
-  findParticipant,
   createParticipants,
-  removeUsersFromDeletedBy,
   findMessageById,
   getRecentConversations,
+  updateOffer
 } from "@/lib/services/chat.services";
-import conversation from "@/lib/schemas/conversation";
+import {OFFER_STATUSES} from '@/lib/constants/constants'
+import conversation,{IParticipant} from "@/lib/schemas/conversation";
 import { BadRequestError } from "@/lib/utils/errors/errors";
-import userServices from "@/lib/services/user.services";
-export const createChat = async (req: any, res: any) => {
+import {createS3FileKey} from '@/lib/utils/fileHelper'
+import {ParticipantRequestData} from '@/lib/types/chat.interface'
+
+export const createChat = async (req: Request, res: Response) => {
   try {
     const body = req.body;
     const data = JSON.parse(body.data);
-    const userId: any = req?.user?._id;
+    const userId: string = req?.user?._id;
     const {
       message,
       type,
@@ -32,27 +35,37 @@ export const createChat = async (req: any, res: any) => {
       reply_id,
       index,
       file,
-      chat_type,
       chat_id,
-      participant_ids,
+      participants,
       offer,
+      updateOfferId,
+      campaignId
     } = data;
-    if (!chat_id && !participant_ids) {
+    if (!chat_id && !participants) {
       return res.status(400).json("Please include the reciever");
     }
-    const participantIds = participant_ids?.map((participant: any) => {
-      return new mongoose.Types.ObjectId(participant);
-    });
+    if(!campaignId){
+      return res.status(400).json("Invalid campaignId")
+    }
 
-    const upload_file: any = req.file;
+
+
+const participantsArray = participants?.map((participant: ParticipantRequestData) => ({
+  id: new mongoose.Types.ObjectId(participant?.id),
+  type: participant?.type,
+}));
+
+    
+
+if(updateOfferId){
+  await updateOffer(updateOfferId,"UPDATED")
+}
     let key;
     let presignedPUTURL = "";
     let uploaded = false;
-    const uuid = uuidv4();
     if (file) {
-      key = `chat/${userId}/${uuid}${file?.file_name}`;
-
-      const compressKey = `optimizedV2/chat/${userId}/${uuid}${file?.file_name}`;
+      const module='chat'
+      key=createS3FileKey(module,userId,file?.file_name)
       presignedPUTURL = s3.getSignedUrl("putObject", {
         Bucket: S3_BUCKET,
         Key: key, //path
@@ -66,20 +79,20 @@ export const createChat = async (req: any, res: any) => {
     //if no chat id provided
     if (!chat_id) {
       // check conversation using paticipant ids
-      const participants = [...participantIds, userId];
 
-      const conversation: any =
-        await findConversationByParticipants(participants);
+      const conversation=
+        await findConversationByParticipants(participantsArray);
 
       if (conversation) {
         chatId = conversation._id;
       } else {
         const data = {
-          participants: participants,
+          participants: participantsArray,
           name: null,
           type: "one-to-one",
+          campaignId:campaignId
         };
-        const createdParticipants: any = await createParticipants(data);
+        const createdParticipants = await createParticipants(data);
         chatId = createdParticipants?.id;
       }
     }
@@ -87,7 +100,7 @@ export const createChat = async (req: any, res: any) => {
       chat_id: chatId,
       message,
       type,
-      sender_id: userId,
+      sender_id: new  mongoose.Types.ObjectId(userId),
       file: key || "",
       file_type: type || null,
       reply_To: reply_id || null,
@@ -95,6 +108,7 @@ export const createChat = async (req: any, res: any) => {
       video_url: null,
       stream_url: null,
       offer: offer,
+      parentOfferId:updateOfferId||null
     };
 
     const chatCreated = await createMessage(createData);
@@ -112,8 +126,11 @@ export const createChat = async (req: any, res: any) => {
       );
     }
 
-    const chatRes: any = await findMessageById(chatCreated?.id);
-
+    const chatRes = await findMessageById(chatCreated?.id);
+    if (!chatRes) {
+      throw new Error("Chat message not found"); // or handle it appropriately
+    }
+    
     const sendData = {
       id: chatCreated?.id,
       message: chatCreated?.message,
@@ -126,8 +143,6 @@ export const createChat = async (req: any, res: any) => {
       file: chatRes?.file,
       socketId,
       createdAt: chatCreated?.createdAt,
-      url: chatRes.url,
-      compressed_url: chatRes.compressed_url,
       thumbnail_url: chatRes.thumbnail_url || null,
       video_url: chatRes.video_url || null,
       stream_url: chatRes.stream_url || null,
@@ -140,14 +155,14 @@ export const createChat = async (req: any, res: any) => {
     //removing users deletedStatus
 
     //sending pusher events
-    const participants: any = await findConversationById(chatId);
+    const conversationDetails = await findConversationById(chatId);
 
-    const participantUserIds = participants?.participants?.map((user: any) => {
-      return user._id;
+    const participantUserIds = conversationDetails?.participants?.map((user: IParticipant) => {
+      return user?.id;
     });
 
     if (type !== "Video") {
-      participantUserIds.map(async (user_id: any) => {
+      participantUserIds.map(async (user_id:string) => {
         await pusherServer
           .trigger(channel, "new_message", sendData)
           .catch((err: any) => console.log("pusher error🛑", err));
@@ -166,17 +181,20 @@ export const createChat = async (req: any, res: any) => {
       });
     }
   } catch (error) {
+    console.log("ERROR at chat controller::",error);
+    
     throw new BadRequestError("Something went wrong");
   }
 };
-export const listConversations = async (req: any, res: any) => {
+export const listConversations = async (req: Request, res: Response) => {
   try {
     const userId = req?.user?._id;
 
     const page: number = Number(req.query.page) || 1;
     const size: number = Number(req.query.size) || 15;
-    const query: any = req.query.query || "";
-    let { conversations, totalPages }: any = await getRecentConversations(
+    const query = (req.query.query as string) || undefined;
+
+    let { conversations, totalPages } = await getRecentConversations(
       userId,
       page,
       size,
@@ -191,50 +209,68 @@ export const listConversations = async (req: any, res: any) => {
       },
     });
   } catch (error) {
+    console.log("ERROR at chat controller::",error);
     throw new BadRequestError("Something went wrong");
   }
 };
-export const listMessages = async (req: any, res: any) => {
+export const listMessages = async (req: Request, res: Response) => {
   try {
     const userId = req.user?._id;
     const page: number = Number(req.query.page) || 1;
     const size: number = Number(req.query.size) || 30;
-    const chat_id: any = req.query?.chat_id;
-    const participant_id: any = req.query?.participant_id;
+    const chat_id = (req.query.chat_id as string) || undefined;
+    const body = req.body;
+    const data = JSON.parse(body.data);
+  const {participants,      campaignId}=data
+  if (!chat_id && !participants) {
+    return res.status(400).json("Please include the reciever");
+  }
+  const participantsArray = participants?.map((participant: ParticipantRequestData) => ({
+    id: new mongoose.Types.ObjectId(participant?.id),
+    type: participant?.type,
+  }));
+  
 
     let chatId = chat_id;
 
     if (!chat_id) {
-      const participants = [participant_id, userId];
-      const conversation = await findConversationByParticipants(participants);
+      // check conversation using paticipant ids
 
-      if (!conversation) {
+      const conversation=
+        await findConversationByParticipants(participantsArray);
+
+      if (conversation) {
+        chatId = conversation._id;
+      } else {
         const data = {
-          participants: participants,
+          participants: participantsArray,
           name: null,
           type: "one-to-one",
+          campaignId:campaignId
         };
         const createdParticipants = await createParticipants(data);
-        chatId = createdParticipants._id;
-      } else {
-        chatId = conversation._id;
+        chatId = createdParticipants?.id;
       }
     }
+    if (!chatId) {
+      throw new BadRequestError("invalid chat Id")
+    }
     const chats = await getMessagesWithUser(chatId, page, size);
-    const getTotalCount: any = await getMessagesCount(chatId);
+    const getTotalCount = await getMessagesCount(chatId);
 
     const totalPages = Math.ceil(getTotalCount / size);
     return res
       .status(200)
       .json({ data: chats, meta: { page, size, totalPages } });
   } catch (error) {
+    console.log("ERROR at chat controller::",error);
     throw new BadRequestError("Something went wrong");
   }
 };
-export const updateChat = async (req: any, res: any) => {
+export const updateChat = async (req: Request, res: Response) => {
   try {
-    const { is_uploaded, channel, socketId, index } = req.body;
-    const { id }: any = req.params;
+    const { is_uploaded, channel, socketId } = req.body;
+    const { id } = req.params;
     const body = req.body;
     const updateData = {
       is_uploaded,
@@ -244,7 +280,10 @@ export const updateChat = async (req: any, res: any) => {
     };
 
     await updateMessage(updateData, id);
-    const chatRes: any = await findMessageById(id);
+    const chatRes = await findMessageById(id);
+    if (!chatRes) {
+      return res.status(404).json({ message: "Message not found." }); // Handle the error appropriately
+    }
     const latestMessageId = chatRes?.id;
     await conversation.findOneAndUpdate(
       { _id: chatRes?.chat_id },
@@ -260,15 +299,13 @@ export const updateChat = async (req: any, res: any) => {
       message: chatRes?.message,
       file_type: chatRes?.file_type,
       seen: chatRes?.seen,
-      sender_id: chatRes.sender_id,
+      sender_id: chatRes.sender,
       sender: chatRes.sender,
       chat_id: chatRes.chat_id,
       parent: chatRes.parent || null,
       file: chatRes?.file,
       socketId,
       createdAt: chatRes?.createdAt,
-      url: chatRes.url,
-      compressed_url: chatRes.compressed_url,
       thumbnail_url: chatRes.thumbnail_url || null,
       video_url: chatRes.video_url || null,
       stream_url: chatRes.stream_url || null,
@@ -294,6 +331,28 @@ export const updateChat = async (req: any, res: any) => {
       .trigger(unreadChannel, "unread_message", { unreadCount: 1 })
       .catch((err: any) => console.log("unread message event error", err));
   } catch (error) {
-    throw new BadRequestError("Somthing went wrong");
+    console.log("ERROR at chat controller::",error);
+    throw new BadRequestError("Something went wrong");
   }
 };
+
+export const updateOfferStatus=async(	req: Request,
+	res: Response,
+)=>{
+  try{
+
+      const {messageId,status}=req?.body
+      const messageDetails= await findMessageById(messageId)
+      if(!messageDetails){
+        throw new BadRequestError("Message not found")
+      }
+      if(!OFFER_STATUSES.includes(status)){
+        throw new BadRequestError("Invalid status option")
+      }
+      await updateOffer(messageId,status)
+      res.status(200).json({message:"Offer status updated succesefully"})
+  }catch(error){
+    console.log("ERROR at chat controller::",error);
+    throw new BadRequestError("Something went wrong")
+  } 
+}

@@ -1,24 +1,23 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 import schemaNameConstants from '@/lib/constants/schemaConstants';
-
-export interface Participant {
-  userId?: number | undefined;
+import { userTypes } from "../types/user";
+export interface IParticipant {
+  id?: mongoose.Types.ObjectId;
+  type:{type:string,enum:userTypes},
+  unreadBy:boolean,
+  deletedBy:boolean
+  archivedBy:boolean
 
 }
 export interface conversationsAttributes {
-  participants: Participant[];
+  participants: IParticipant[];
   conversation_name?: string;
   type: string;
-  unreadBy?: Participant[];
-  archivedBy?: Participant[];
-  deletedBy?: Array<{
-    userId: number;
-    deletedAt: Date;
-    status: boolean;
-  }>;
   latestMessageId?: mongoose.Types.ObjectId;
   latestMessageCreatedAt?: Date;
+  campaignId:mongoose.Types.ObjectId;
+
 }
 
 const typeEnum = Object.freeze({
@@ -29,24 +28,21 @@ const typeEnum = Object.freeze({
 const conversationSchema = new Schema<conversationsAttributes>(
   {
 
-    participants: [],
-    conversation_name: {
-      type: String,
-      default: null,
-    },
+    participants: [{
+      id: {type:Schema.Types.ObjectId},
+      type:{type:String,enum:userTypes},
+      unreadBy:{type:Boolean,default:false},
+      deletedBy:{type:Boolean,default:false},
+      archivedBy:{type:Boolean,default:false},
+      _id: false 
+    }],
     type: {
       type: String,
       enum: Object.values(typeEnum),
+      required:true
     },
-    unreadBy: [],
-    deletedBy: [
-      {
-        userId: { type: Number, ref: "users" },
-        deletedAt: { type: Date },
-        status: { type: Boolean },
-      },
-    ],
     latestMessageId: { type: mongoose.Types.ObjectId, ref: "messages" },
+    campaignId:{type:Schema.Types.ObjectId,ref:schemaNameConstants?.campaignsSchema}
   },
   {
     timestamps: true,
