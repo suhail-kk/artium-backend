@@ -505,3 +505,125 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
     );
 
   }
+  export const getParticipipantDetails = async (
+    userId: string,
+    chatId:string
+  ) => {
+  
+    try {
+  
+      //aggrgation pipeline
+      const pipeline: any = [
+        {
+          $match: {
+            _id:new mongoose.Types.ObjectId(chatId)
+          },
+        },
+      
+    {
+      $lookup: {
+        from: "users",
+        localField: "participants.id",
+        foreignField: "_id",
+        as: "userParticipants",
+      },
+    },
+  
+    {
+      $lookup: {
+        from: "brands",
+        localField: "participants.id",
+        foreignField: "_id",
+        as: "brandParticipants",
+      },
+    },
+    {
+      $addFields: {
+        participantsData: {
+          $map: {
+            input: {
+              $filter: {
+                input: "$participants",
+                as: "participant",
+                cond: { $ne: ["$$participant.id", new mongoose.Types.ObjectId(userId)] },
+              },
+            },
+            as: "participant",
+
+            in: {
+              $mergeObjects: [
+                "$$participant",
+                {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: {
+                          $cond: {
+                            if: { $eq: ["$$participant.type", "Brand"] },
+                            then: "$brandParticipants",
+                            else: "$userParticipants",
+                          },
+                        },
+                        as: "details",
+                        cond: { $eq: ["$$details._id", "$$participant.id"] },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                {
+                  profileImageOriginal: {
+                    $cond: {
+                      if: { $eq: ["$$participant.type", "Creator"] }, // Check if the type is User
+                      then: s3GetURL(s3paths.userProfileImage + "$$participant._id"), 
+                      else: null, 
+                    },
+                  },
+                },
+               
+              ],
+            },
+          },
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "campaigns",
+        localField: "campaignId",
+        foreignField: "_id",
+        as: "campaign",
+      },
+    },
+    {
+      $addFields: {
+        campaignImageOriginal: s3GetURL(s3paths.campaignLogoImage + 'campaignId'),
+      },
+    }
+     ];
+
+  
+      //  projection
+      pipeline.push(
+        {
+          $project: {
+            participants: "$participantsData",
+            campaign:'$campaign',
+            _id: 1,
+            type: 1,
+          },
+        }
+      );
+  
+      // Execution 
+      const result = await ConversationModel.aggregate(pipeline);
+      return result
+  
+      
+    } catch (error) {
+      console.log("Error in getRecentConversations:", error);
+      throw new Error("Failed to fetch recent conversations.");
+    }
+  };
+  
+  
