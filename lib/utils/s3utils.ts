@@ -25,3 +25,12 @@ export const s3PutURL = (key: string) => {
 		Expires: 10000,
 	});
 };
+
+export const s3DeleteURL = (key: string) => {
+	return s3.getSignedUrl('deleteObject', {
+		Bucket: ENV.BUCKET_NAME,
+		Key: key,
+		Expires: 10000,
+	});
+};
+
