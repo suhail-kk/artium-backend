@@ -597,13 +597,15 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
     },
     {
       $unwind:{
-        path:'$participantsData'
+        path:'$participantsData',
+        preserveNullAndEmptyArrays: true,
       }
     },
 
   {
       $unwind:{
-        path:'$campaign'
+        path:'$campaign',
+        preserveNullAndEmptyArrays: true,
       }
     },
     
