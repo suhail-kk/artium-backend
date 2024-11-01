@@ -319,7 +319,7 @@ export const getRecentConversations = async (
 
 export const findConversationById = async (chat_id: string) => {
   try {
-    return await ConversationModel.findById({ _id: chat_id })
+    return await ConversationModel.findOne({ _id: new mongoose.Schema.Types.ObjectId(chat_id) })
       .populate({
         path: "participants",
         model: "users",
