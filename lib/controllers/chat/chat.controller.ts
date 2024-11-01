@@ -369,13 +369,13 @@ export const getParticipipant = async (req: Request, res: Response) => {
     const chatId = req.query.chatId as string;
      // check conversation exist 
     const conversationDetails = await findConversationById(chatId);
-    if (conversationDetails) {
+    if (!conversationDetails) {
       throw new BadRequestError("Conversation not found");
     }
     //get participant
     const otherParticipant = await getParticipipantDetails(userId, chatId);
 
-    res.status(200).json(otherParticipant);
+    res.status(200).json({data:otherParticipant});
   } catch (error) {
     console.log("ERROR at chat controller", error);
   }
