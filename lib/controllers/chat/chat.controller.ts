@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from "uuid";
-import { NextFunction, Request, Response } from 'express';
+
+import {  Request, Response } from "express";
 import { S3_BUCKET } from "@/lib/config/s3.config";
 import s3 from "@/lib/config/s3.config";
 import pusherServer from "@/lib/config/pusher.config";
@@ -14,18 +14,19 @@ import {
   createParticipants,
   findMessageById,
   getRecentConversations,
-  updateOffer
+  updateOffer,
+  markAllMessagesRead,
+  getParticipipantDetails,
 } from "@/lib/services/chat.services";
-import {OFFER_STATUSES} from '@/lib/constants/constants'
-import conversation,{IParticipant} from "@/lib/schemas/conversation";
+import { OFFER_STATUSES } from "@/lib/constants/constants";
+import conversation, { IParticipant } from "@/lib/schemas/conversation";
 import { BadRequestError } from "@/lib/utils/errors/errors";
-import {createS3FileKey} from '@/lib/utils/fileHelper'
-import {ParticipantRequestData} from '@/lib/types/chat.interface'
+import { createS3FileKey } from "@/lib/utils/fileHelper";
+import { ParticipantRequestData } from "@/lib/types/chat.interface";
 
 export const createChat = async (req: Request, res: Response) => {
   try {
     const body = req.body;
-    const data = JSON.parse(body.data);
     const userId: string = req?.user?._id;
     const {
       message,
@@ -39,33 +40,31 @@ export const createChat = async (req: Request, res: Response) => {
       participants,
       offer,
       updateOfferId,
-      campaignId
-    } = data;
+      campaignId,
+    } = body;
     if (!chat_id && !participants) {
       return res.status(400).json("Please include the reciever");
     }
-    if(!campaignId){
-      return res.status(400).json("Invalid campaignId")
+    if (!campaignId) {
+      return res.status(400).json("Invalid campaignId");
     }
 
+    const participantsArray = participants?.map(
+      (participant: ParticipantRequestData) => ({
+        id: new mongoose.Types.ObjectId(participant?.id),
+        type: participant?.type,
+      })
+    );
 
-
-const participantsArray = participants?.map((participant: ParticipantRequestData) => ({
-  id: new mongoose.Types.ObjectId(participant?.id),
-  type: participant?.type,
-}));
-
-    
-
-if(updateOfferId){
-  await updateOffer(updateOfferId,"UPDATED")
-}
+    if (updateOfferId) {
+      await updateOffer(updateOfferId, "UPDATED");
+    }
     let key;
     let presignedPUTURL = "";
     let uploaded = false;
     if (file) {
-      const module='chat'
-      key=createS3FileKey(module,userId,file?.file_name)
+      const module = "chat";
+      key = createS3FileKey(module, userId, file?.file_name);
       presignedPUTURL = s3.getSignedUrl("putObject", {
         Bucket: S3_BUCKET,
         Key: key, //path
@@ -80,7 +79,7 @@ if(updateOfferId){
     if (!chat_id) {
       // check conversation using paticipant ids
 
-      const conversation=
+      const conversation =
         await findConversationByParticipants(participantsArray);
 
       if (conversation) {
@@ -90,7 +89,7 @@ if(updateOfferId){
           participants: participantsArray,
           name: null,
           type: "one-to-one",
-          campaignId:campaignId
+          campaignId: campaignId,
         };
         const createdParticipants = await createParticipants(data);
         chatId = createdParticipants?.id;
@@ -100,7 +99,7 @@ if(updateOfferId){
       chat_id: chatId,
       message,
       type,
-      sender_id: new  mongoose.Types.ObjectId(userId),
+      sender_id: new mongoose.Types.ObjectId(userId),
       file: key || "",
       file_type: type || null,
       reply_To: reply_id || null,
@@ -108,7 +107,7 @@ if(updateOfferId){
       video_url: null,
       stream_url: null,
       offer: offer,
-      parentOfferId:updateOfferId||null
+      parentOfferId: updateOfferId || null,
     };
 
     const chatCreated = await createMessage(createData);
@@ -130,7 +129,7 @@ if(updateOfferId){
     if (!chatRes) {
       throw new Error("Chat message not found"); // or handle it appropriately
     }
-    
+
     const sendData = {
       id: chatCreated?.id,
       message: chatCreated?.message,
@@ -157,12 +156,14 @@ if(updateOfferId){
     //sending pusher events
     const conversationDetails = await findConversationById(chatId);
 
-    const participantUserIds = conversationDetails?.participants?.map((user: IParticipant) => {
-      return user?.id;
-    });
+    const participantUserIds = conversationDetails?.participants?.map(
+      (user: IParticipant) => {
+        return user?.id;
+      }
+    );
 
     if (type !== "Video") {
-      participantUserIds.map(async (user_id:string) => {
+      participantUserIds.map(async (user_id: string) => {
         await pusherServer
           .trigger(channel, "new_message", sendData)
           .catch((err: any) => console.log("pusher error🛑", err));
@@ -181,8 +182,8 @@ if(updateOfferId){
       });
     }
   } catch (error) {
-    console.log("ERROR at chat controller::",error);
-    
+    console.log("ERROR at chat controller::", error);
+
     throw new BadRequestError("Something went wrong");
   }
 };
@@ -210,44 +211,44 @@ export const listConversations = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.log("ERROR at chat controller::",error);
+    console.log("ERROR at chat controller::", error);
     throw new BadRequestError("Something went wrong");
   }
 };
 export const listMessages = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?._id;
     const page: number = Number(req.query.page) || 1;
     const size: number = Number(req.query.size) || 30;
     const chat_id = (req.query.chat_id as string) || undefined;
     const body = req.body;
-    
-    const data = body?.data
-    const participants=data?.participants
-  if (!chat_id && !participants) {
-    return res.status(400).json("Please include the reciever");
-  }
 
-  const participantsArray = participants?.map((participant: ParticipantRequestData) => ({
-    id: new mongoose.Types.ObjectId(participant?.id),
-    type: participant?.type,
-  }));
-  
+    const data = body?.data;
+    const participants = data?.participants;
+    if (!chat_id && !participants) {
+      return res.status(400).json("Please include the reciever");
+    }
+
+    const participantsArray = participants?.map(
+      (participant: ParticipantRequestData) => ({
+        id: new mongoose.Types.ObjectId(participant?.id),
+        type: participant?.type,
+      })
+    );
 
     let chatId = chat_id;
 
     if (!chat_id) {
       // check conversation using paticipant ids
 
-      const conversation=
+      const conversation =
         await findConversationByParticipants(participantsArray);
 
       if (conversation) {
         chatId = conversation._id;
-      } 
+      }
     }
     if (!chatId) {
-      throw new BadRequestError("invalid chat Id")
+      throw new BadRequestError("invalid chat Id");
     }
     const chats = await getMessagesWithUser(chatId, page, size);
     const getTotalCount = await getMessagesCount(chatId);
@@ -257,7 +258,7 @@ export const listMessages = async (req: Request, res: Response) => {
       .status(200)
       .json({ data: chats, meta: { page, size, totalPages } });
   } catch (error) {
-    console.log("ERROR at chat controller::",error);
+    console.log("ERROR at chat controller::", error);
     throw new BadRequestError("Something went wrong");
   }
 };
@@ -325,28 +326,57 @@ export const updateChat = async (req: Request, res: Response) => {
       .trigger(unreadChannel, "unread_message", { unreadCount: 1 })
       .catch((err: any) => console.log("unread message event error", err));
   } catch (error) {
-    console.log("ERROR at chat controller::",error);
+    console.log("ERROR at chat controller::", error);
     throw new BadRequestError("Something went wrong");
   }
 };
 
-export const updateOfferStatus=async(	req: Request,
-	res: Response,
-)=>{
-  try{
+export const updateOfferStatus = async (req: Request, res: Response) => {
+  try {
+    const { messageId, status } = req?.body;
+    const messageDetails = await findMessageById(messageId);
+    if (!messageDetails) {
+      throw new BadRequestError("Message not found");
+    }
+    if (!OFFER_STATUSES.includes(status)) {
+      throw new BadRequestError("Invalid status option");
+    }
+    await updateOffer(messageId, status);
+    res.status(200).json({ message: "Offer status updated succesefully" });
+  } catch (error) {
+    console.log("ERROR at chat controller::", error);
+    throw new BadRequestError("Something went wrong");
+  }
+};
 
-      const {messageId,status}=req?.body
-      const messageDetails= await findMessageById(messageId)
-      if(!messageDetails){
-        throw new BadRequestError("Message not found")
-      }
-      if(!OFFER_STATUSES.includes(status)){
-        throw new BadRequestError("Invalid status option")
-      }
-      await updateOffer(messageId,status)
-      res.status(200).json({message:"Offer status updated succesefully"})
-  }catch(error){
-    console.log("ERROR at chat controller::",error);
-    throw new BadRequestError("Something went wrong")
-  } 
-}
+export const markAllRead = async (req: Request, res: Response) => {
+  try {
+    const userId = req?.user?._id;
+    const chat_id = req?.query?.chat_id as string;
+    if (!chat_id) {
+      throw new BadRequestError("Invalid conversation id");
+    }
+
+    await markAllMessagesRead(chat_id, userId);
+    res.status(200).json({ message: "Message mark as read succesfully" });
+  } catch (error) {
+    throw new BadRequestError("something went wrong");
+  }
+};
+export const getParticipipant = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user._id;
+    const chatId = req.query.chatId as string;
+     // check conversation exist 
+    const conversationDetails = await findConversationById(chatId);
+    if (conversationDetails) {
+      throw new BadRequestError("Conversation not found");
+    }
+    //get participant
+    const otherParticipant = await getParticipipantDetails(userId, chatId);
+
+    res.status(200).json(otherParticipant);
+  } catch (error) {
+    console.log("ERROR at chat controller", error);
+  }
+};
