@@ -201,9 +201,14 @@ export const getRecentConversations = async (
               {
                 profileImageOriginal: {
                   $cond: {
-                    if: { $eq: ["$$participant.type", "Creator"] }, // Check if the type is User
-                    then: s3GetURL(s3paths.userProfileImage + "$$participant._id"), // Add the profile image URL
-                    else: null, // Or set to null if it's not a User
+                    if: { $eq: ["$$participant.type", "Creator"] }, 
+                    then: {
+                      $concat: [
+                        s3GetURL(s3paths.userProfileImage), 
+                        { $toString: "$$participant.id" } 
+                      ]
+                    },
+                    else: null,
                   },
                 },
               },
@@ -242,9 +247,24 @@ export const getRecentConversations = async (
       },
       {
         $addFields: {
-          campaignImageOriginal: s3GetURL(s3paths.campaignLogoImage + 'campaignId'),
-        },
-      }
+          "campaign.campaignImageUrl": {
+            $concat: [s3GetURL(s3paths.campaignLogoImage), { $toString: "$campaignId" }]
+          }
+        }
+      },
+      {
+        $unwind:{
+          path:'$participantsData',
+          preserveNullAndEmptyArrays: true,
+        }
+      },
+  
+    {
+        $unwind:{
+          path:'$campaign',
+          preserveNullAndEmptyArrays: true,
+        }
+      },
     ];
 
     //  search 
@@ -268,7 +288,6 @@ export const getRecentConversations = async (
         $project: {
           participants: "$participantsData",
           campaign:"$campaign",
-          campaignImageUrl:'$campaignImageOriginal',
           unreadCount:'$unreadCount',
           latestMessage: {
             $cond: {
@@ -279,7 +298,6 @@ export const getRecentConversations = async (
           },
           _id: 1,
           latestMessageCreatedAt: 1,
-          conversation_name: 1,
           type: 1,
           unreadBy: 1,
         },
@@ -574,12 +592,17 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
                 {
                   profileImageOriginal: {
                     $cond: {
-                      if: { $eq: ["$$participant.type", "Creator"] }, // Check if the type is User
-                      then: s3GetURL(s3paths.userProfileImage + "$$participant._id"), 
-                      else: null, 
+                      if: { $eq: ["$$participant.type", "Creator"] }, 
+                      then: {
+                        $concat: [
+                          s3GetURL(s3paths.userProfileImage), 
+                          { $toString: "$$participant.id" }
+                        ]
+                      },
+                      else: null,
                     },
                   },
-                },
+                }
                
               ],
             },
@@ -595,13 +618,6 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
         as: "campaign",
       },
     },
-    {
-      $unwind:{
-        path:'$participantsData',
-        preserveNullAndEmptyArrays: true,
-      }
-    },
-
   {
       $unwind:{
         path:'$campaign',
@@ -611,8 +627,10 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
     
     {
       $addFields: {
-        campaignImageOriginal: s3GetURL(s3paths.campaignLogoImage + 'campaignId'),
-      },
+        "campaign.campaignImageUrl": {
+          $concat: [s3GetURL(s3paths.campaignLogoImage), { $toString: "$campaignId" }]
+        }
+      }
     }
      ];
 
@@ -631,7 +649,7 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
   
       // Execution 
       const result = await ConversationModel.aggregate(pipeline);
-      return result
+      return result.length > 0 ? result[0] : null;
   
       
     } catch (error) {

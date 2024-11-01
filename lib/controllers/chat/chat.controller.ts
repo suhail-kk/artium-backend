@@ -46,7 +46,7 @@ export const createChat = async (req: Request, res: Response) => {
     if (!chat_id && !participants) {
       return res.status(400).json("Please include the reciever");
     }
-    if (!campaignId) {
+    if (participants && !campaignId) {
       return res.status(400).json("Invalid campaignId");
     }
 
@@ -375,7 +375,7 @@ export const getParticipipant = async (req: Request, res: Response) => {
     }
     //get participant
     const otherParticipant = await getParticipipantDetails(userId, chatId);
-
+    
     sendSuccessResponse(res, 'Participant details fetched succesfully', 
 		otherParticipant,
 	
