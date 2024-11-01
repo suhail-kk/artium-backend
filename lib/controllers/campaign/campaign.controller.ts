@@ -17,9 +17,9 @@ export async function createCampaign(req: Request, res: Response,
 
 
         const logoUUID = uuidv4()
-        const producutUUID = uuidv4()
+        const productUUID = uuidv4()
         const logo_image_key = `logo_images/${logoUUID}${data?.logo_image}`
-        const product_image_key = `product_images/${producutUUID}${data?.product_image}`
+        const product_image_key = `product_images/${productUUID}${data?.product_image}`
 
         const {
             campaign_title,
