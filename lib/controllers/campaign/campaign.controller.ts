@@ -119,9 +119,26 @@ export async function createCampaign(req: Request, res: Response,
 
 export async function updateCampaign(req: any, res: any) {
     try {
-        const body = await req.body
+        const data = await req.body
+
+
+
+
+        let logo_image_key
+        let product_image_key
+        if (data?.logo_image) {
+            const logoUUID = uuidv4()
+            logo_image_key = `logo_images/${logoUUID}${data?.logo_image}`
+        }
+
+        if (data?.product_image) {
+            const producutUUID = uuidv4()
+            product_image_key = `product_images/${producutUUID}${data?.product_image}`
+        }
 
         const {
+            campaign_id,
+            product_id,
             campaign_title,
             campaign_description,
             end_date,
@@ -132,19 +149,16 @@ export async function updateCampaign(req: any, res: any) {
             video_notes,
             product_url,
             product_title,
-            product_image_key,
             product_description,
             video_types,
             brand_id,
             user_id,
-            product_id,
-            campaign_id,
-            campaign_status,
             number_of_creators,
             min_price,
             max_price,
             video_script,
-        } = body
+        } = data
+
 
         const productPayload = {
             brand_id,
@@ -169,12 +183,12 @@ export async function updateCampaign(req: any, res: any) {
             reference_link,
             campaign_description,
             product_id: product_id,
-            campaign_status,
+            campaign_status: 'Ongoing',
             number_of_creators,
             min_price,
             max_price,
             video_script,
-            logo_image_key: "",
+            logo_image_key,
         }
         const campaign = await campaignServices.updateCampaign(
             campaign_id,

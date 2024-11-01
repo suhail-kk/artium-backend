@@ -1,5 +1,5 @@
 import Campaign from '@/lib/schemas/campaign'
-import { ICampaign } from '@/lib/types/campaign.interface'
+import { ICampaign, IUpdateCampaign } from '@/lib/types/campaign.interface'
 import schemaNameConstants from '@/lib/constants/schemaConstants'
 import mongoose from 'mongoose'
 import { s3GetURL } from '../utils/s3utils'
@@ -9,7 +9,7 @@ const createCampaign = async (data: ICampaign) => {
     return res
 }
 
-const updateCampaign = async (id: string, data: ICampaign) => {
+const updateCampaign = async (id: string, data: IUpdateCampaign) => {
     const res = await Campaign.updateOne(
         {
             _id: id,
