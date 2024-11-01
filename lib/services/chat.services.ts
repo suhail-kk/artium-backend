@@ -596,6 +596,18 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
       },
     },
     {
+      $unwind:{
+        path:'$participantsData'
+      }
+    },
+
+  {
+      $unwind:{
+        path:'$campaign'
+      }
+    },
+    
+    {
       $addFields: {
         campaignImageOriginal: s3GetURL(s3paths.campaignLogoImage + 'campaignId'),
       },
