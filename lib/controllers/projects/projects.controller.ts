@@ -7,55 +7,56 @@ import { s3PutURL } from '@/lib/utils/s3utils';
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import { createErrorResponse } from '@/lib/utils/apiResponse'
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
-import featuredProjectServices from '@/lib/services/featuredProject.services';
+import projectsServices from '@/lib/services/projects.services';
 
-export async function createFeaturedProjects(req: Request, res: Response,
+export async function createProjects(req: Request, res: Response,
     next: NextFunction) {
     try {
         const data = req.body
         const user = req.user
-        const { files } = data
+        const { files, type } = data
 
         if (!Array.isArray(files)) {
             return next(new BadRequestError("Files should be an array."));
         }
 
-        const count = await featuredProjectServices.featuredProjectCount()
-        if (count + files?.length < 3) {
-            let urls: string[] = []
-            const payload = files?.map((project: string) => {
-                const UUID = uuidv4()
-                const image_key = `additional_projects/${UUID}${project}`
-                const presigned_url = s3PutURL(
-                    image_key
-                );
-                urls.push(presigned_url)
-                return (
-                    {
-                        url: presigned_url,
-                        user_id: new ObjectId(user._id),
-                        title: `${user?.firstName}'s Featured projects`,
-                    }
-                )
-            })
+        const count = await projectsServices.ProjectsCount(type)
 
-            const retVal = await featuredProjectServices.bulkInsertFeaturedProject(payload)
-            return sendSuccessResponse(res, "Featured projects added successfully", {
-                data: retVal,
-                urls
-            });
-        } else {
+        if (type === 'featured' && count + files?.length > 4) {
             return next(new BadRequestError("Can't able to upload more than 3 projects"));
         }
-
-
-
+        let urls: string[] = []
+        const payload = files?.map((project: {
+            name: string,
+            size: number,
+            type: string
+        }) => {
+            const UUID = uuidv4()
+            const image_key = `additional_projects/${UUID}${project?.name}`
+            const presigned_url = s3PutURL(
+                image_key
+            );
+            urls.push(presigned_url)
+            return (
+                {
+                    type,
+                    url: image_key,
+                    user_id: new ObjectId(user._id),
+                    title: `${user?.firstName}'s  projects`,
+                }
+            )
+        })
+        const retVal = await projectsServices.bulkInsertProject(payload)
+        return sendSuccessResponse(res, " projects added successfully", {
+            data: retVal,
+            urls
+        });
     } catch (error) {
         return new BadRequestError('Failed to create campaign');
     }
 }
 
-export async function deleteFeaturedProject(req: Request, res: Response) {
+export async function deleteProject(req: Request, res: Response) {
     try {
         const id = req.query.id as string
 
@@ -63,7 +64,7 @@ export async function deleteFeaturedProject(req: Request, res: Response) {
             return createErrorResponse({ message: 'ID is required and must be a string' }, 400);
         }
 
-        const response = await featuredProjectServices.deleteFeaturedProject(id)
+        const response = await projectsServices.deleteProject(id)
 
         return sendSuccessResponse(res, "Project deleted successfully", response);
     } catch (error) {
@@ -71,14 +72,16 @@ export async function deleteFeaturedProject(req: Request, res: Response) {
     }
 }
 
-export async function getFeaturedProjects(req: Request, res: Response) {
+export async function getProjects(req: Request, res: Response) {
     try {
+        const type = (req.query.type as string) || 'additional';
         const limit = parseInt((req.query.limit as string) || '10')
         const page = parseInt((req.query.page as string) || '1')
 
-        const { data, count } = await featuredProjectServices.getFeaturedProjects(
+        const { data, count } = await projectsServices.getprojects(
             page || 1,
-            limit || 10
+            limit || 10,
+            type
         )
         const totalPages = Math.ceil(count / limit)
 

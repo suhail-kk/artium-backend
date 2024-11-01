@@ -12,6 +12,13 @@ export const validImageTypes = [
 	'image/webp',
 ];
 
+export const validVideoTypes = [
+	'video/mp4',
+	'video/quicktime',
+	'video/x-msvideo',
+	'video/webm',
+];
+
 // Map of MIME types to file extensions and categories
 export const mimeTypeMap: Record<
 	string,

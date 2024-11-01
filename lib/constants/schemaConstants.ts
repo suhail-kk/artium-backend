@@ -11,8 +11,7 @@ const videoTypeSchema = 'videotypes'
 const creatorsCount = 'creatorscount'
 const campaignsSchema = 'Campaign'
 const applicantsSchema = 'applicants'
-const additionalProjectsSchema = 'additionalProjects'
-const featuredProjectsSchema = 'featuredProjects'
+const ProjectsSchema = 'projects'
 export default {
     userSchema,
     otpSchema,
@@ -27,6 +26,5 @@ export default {
     creatorsCount,
     campaignsSchema,
     applicantsSchema,
-    additionalProjectsSchema,
-    featuredProjectsSchema
+    ProjectsSchema
 }

@@ -1,8 +1,9 @@
 import mongoose, { Schema } from 'mongoose'
 
 import schemaNameConstants from '../constants/schemaConstants'
+import { PROJECTS_TYPES } from '../constants/constants'
 
-const featuredProjectsSchema = new mongoose.Schema(
+const ProjectsSchema = new mongoose.Schema(
     {
         title: {
             type: String,
@@ -10,6 +11,12 @@ const featuredProjectsSchema = new mongoose.Schema(
         url: {
             type: String,
             required: true,
+        },
+        type: {
+            type: String,
+            required: true,
+            default: 'additional',
+            enum: PROJECTS_TYPES
         },
         user_id: {
             type: Schema.Types.ObjectId,
@@ -21,5 +28,5 @@ const featuredProjectsSchema = new mongoose.Schema(
     }
 )
 
-export default mongoose.models.featuredProjects ||
-    mongoose.model(schemaNameConstants.featuredProjectsSchema, featuredProjectsSchema)
+export default mongoose.models.Projects ||
+    mongoose.model(schemaNameConstants.ProjectsSchema, ProjectsSchema)
