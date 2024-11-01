@@ -18,6 +18,7 @@ import {
   markAllMessagesRead,
   getParticipipantDetails,
 } from "@/lib/services/chat.services";
+import { sendSuccessResponse } from "@/lib/utils/responses/success.handler";
 import { OFFER_STATUSES } from "@/lib/constants/constants";
 import conversation, { IParticipant } from "@/lib/schemas/conversation";
 import { BadRequestError } from "@/lib/utils/errors/errors";
@@ -342,7 +343,7 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
       throw new BadRequestError("Invalid status option");
     }
     await updateOffer(messageId, status);
-    res.status(200).json({ message: "Offer status updated succesefully" });
+    sendSuccessResponse(res,"Offer status updated succesefully");
   } catch (error) {
     console.log("ERROR at chat controller::", error);
     throw new BadRequestError("Something went wrong");
@@ -358,7 +359,7 @@ export const markAllRead = async (req: Request, res: Response) => {
     }
 
     await markAllMessagesRead(chat_id, userId);
-    res.status(200).json({ message: "Message mark as read succesfully" });
+    sendSuccessResponse(res, "Message mark as read succesfully");
   } catch (error) {
     throw new BadRequestError("something went wrong");
   }
@@ -375,7 +376,10 @@ export const getParticipipant = async (req: Request, res: Response) => {
     //get participant
     const otherParticipant = await getParticipipantDetails(userId, chatId);
 
-    res.status(200).json({data:otherParticipant});
+    sendSuccessResponse(res, 'Participant details fetched succesfully', 
+		otherParticipant,
+	
+		);
   } catch (error) {
     console.log("ERROR at chat controller", error);
   }
