@@ -6,8 +6,6 @@ const express = require('express');
 const router = express.Router()
 
 router.post('/create', createCampaignValidator(), createCampaign)
-
-
 router.put('/update', updateCampaign)
 router.delete('/delete', deleteCampaign)
 router.get('/get', getCampaigns)

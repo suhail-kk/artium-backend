@@ -8,7 +8,7 @@ export interface ICampaign {
     product_id: Types.ObjectId
     start_date: string
     end_date: string
-    delivery_type: Types.ObjectId
+    delivery_type: Types.ObjectId,
     video_types: []
     video_duration: string
     reference_link: []
