@@ -263,3 +263,58 @@ export async function getUserCampaigns(req: Request, res: Response) {
         return new BadRequestError('Failed to fetch My campaigns');
     }
 }
+
+export async function getAppliedCampaigns(req: Request, res: Response) {
+    try {
+        const user = req.user
+        const user_id = user?._id as string
+        const search = req.query.search as string
+        const limit = parseInt((req.query.limit as string) || '10')
+        const page = parseInt((req.query.page as string) || '1')
+
+        if (!user_id) {
+            throw new Error('User ID is required')
+        }
+        const { data, count } = await campaignServices.getAppliedCampaigns(
+            user_id,
+            search,
+            page || 1,
+            limit || 10
+        )
+
+        const totalPages = Math.ceil(count / limit)
+        return sendSuccessResponse(res, "Applied campaigns fetched successfully", {
+            data: data,
+            meta: {
+                page: page,
+                limit: limit,
+                total: count,
+                totalPages,
+            }, status: 200
+        });
+
+    } catch (error) {
+        return new BadRequestError('Failed to fetch Applied campaigns');
+    }
+}
+
+export async function getNumberOfApplicant(req: Request, res: Response) {
+    try {
+        const campaign_id = req.query?.campaign_id as string
+
+        if (!campaign_id) {
+            return createErrorResponse({ message: 'Campaign ID is required and must be a string' }, 400);
+        }
+
+        const retVal = await campaignServices.getNumberOfApplicants(
+            campaign_id
+        )
+
+        return sendSuccessResponse(res, "Applied campaigns fetched successfully", {
+            data: retVal, status: 200
+        });
+
+    } catch (error) {
+        return new BadRequestError('Failed to fetch Applied campaigns');
+    }
+}

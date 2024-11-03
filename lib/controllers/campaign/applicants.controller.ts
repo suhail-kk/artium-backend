@@ -16,43 +16,67 @@ export async function createApplicant(req: Request, res: Response,
             campaign_id
         } = data
 
-        const payload = {
-            campaign_id,
-            rating: 0,
-            status: "s",
-            user_id: new Types.ObjectId(user?._id),
+        const existingApplicant = await applicantsServices.isExist(new Types.ObjectId(user?._id), new Types.ObjectId(campaign_id));
+        if (existingApplicant) {
+            return createErrorResponse(res, {
+                message: "You're already applied for this campaign"
+            });
+        } else {
+            const payload = {
+                campaign_id,
+                rating: 0,
+                status: "",
+                user_id: new Types.ObjectId(user?._id),
+            }
+
+            const response = await applicantsServices.createApplicant(payload)
+
+            return sendSuccessResponse(res, "Successfully applied for the campaign", {
+                data: response
+            });
         }
-
-        const response = await applicantsServices.createApplicant(payload)
-
-        return sendSuccessResponse(res, "Successfully applied for the campaign", {
-            data: response
-        });
-
     } catch (error) {
         return new BadRequestError('Failed to create campaign');
     }
 }
 
-export async function updateApplicant(req: any, res: any) {
+export async function getApplicantStatus(req: Request, res: Response,
+    next: NextFunction) {
     try {
         const user = req.user
+        const campaign_id = req.query.campaign_id as string
+
+        const existingApplicant = await applicantsServices.isExist(new Types.ObjectId(user?._id), new Types.ObjectId(campaign_id));
+
+        return sendSuccessResponse(res, "Applicant status fetched successfully", {
+            data: {
+                status: existingApplicant ? true : false
+            }
+        });
+    } catch (error) {
+        return new BadRequestError('Failed to fetch applicant status');
+    }
+}
+
+
+export async function updateApplicant(req: any, res: any) {
+    try {
         const body = await req.body
 
         const {
             status,
             rating,
             campaign_id,
+            application_id
         } = body
 
         const payload = {
             rating,
             status,
             campaign_id,
-            user_id: new Types.ObjectId(user?._id),
         }
 
-        const response = await applicantsServices.updateApplicant(campaign_id, payload)
+        const response = await applicantsServices.updateApplicant(application_id, payload)
 
 
         return sendSuccessResponse(res, "Applicant updated successfully", {
@@ -84,13 +108,19 @@ export async function getApplicants(req: Request, res: Response) {
     try {
 
         const search = req.query.search as string
+        const filter_by = req.query.filter_by as string
         const campaign_id = req.query.campaign_id as string
-        const limit = parseInt((req.query.limit as string) || '10')
         const page = parseInt((req.query.page as string) || '1')
+        const limit = parseInt((req.query.limit as string) || '10')
+
+        if (!campaign_id) {
+            return new BadRequestError('Campaign id is required');
+        }
 
         const { data, count } = await applicantsServices.getApplicants(
             search,
             campaign_id,
+            filter_by,
             page || 1,
             limit || 10
         )

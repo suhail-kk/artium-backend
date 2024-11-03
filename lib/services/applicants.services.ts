@@ -1,7 +1,9 @@
 import Applicant from '@/lib/schemas/applicants'
-import { IApplicant } from '@/lib/types/applicants.interface'
+import { IApplicant, IUpdateApplicant } from '@/lib/types/applicants.interface'
 import schemaNameConstants from '@/lib/constants/schemaConstants'
 import mongoose from 'mongoose'
+import { s3GetURL } from '../utils/s3utils'
+import s3paths from '../constants/s3paths'
 
 
 const createApplicant = async (data: IApplicant) => {
@@ -9,7 +11,7 @@ const createApplicant = async (data: IApplicant) => {
     return res
 }
 
-const updateApplicant = async (id: string, data: IApplicant) => {
+const updateApplicant = async (id: string, data: IUpdateApplicant) => {
     const res = await Applicant.updateOne(
         {
             _id: id,
@@ -19,7 +21,11 @@ const updateApplicant = async (id: string, data: IApplicant) => {
     return res
 }
 
-const getApplicants = async (campaign_id: string, search: string, page: number, limit: number) => {
+const isExist = async (userId: mongoose.Types.ObjectId, campaignId: mongoose.Types.ObjectId) => {
+    return await Applicant.findOne({ user_id: userId, campaign_id: campaignId });
+};
+
+const getApplicants = async (search: string, campaign_id: string, filter_by: string, page: number, limit: number) => {
     const searchRegex = new RegExp(search, 'i')
 
     const pipeline = [
@@ -28,6 +34,7 @@ const getApplicants = async (campaign_id: string, search: string, page: number, 
                 campaign_id: new mongoose.Types.ObjectId(campaign_id),
             },
         },
+        ...(filter_by ? [{ $match: { status: filter_by } }] : []),
         {
             $lookup: {
                 from: schemaNameConstants.userSchema,
@@ -49,6 +56,11 @@ const getApplicants = async (campaign_id: string, search: string, page: number, 
                     { 'user_details.lastName': searchRegex }
                 ]
             }
+        },
+        {
+            $addFields: {
+                profileImageOriginal: s3GetURL(s3paths.userProfileImage + 'user_details?._id'),
+            },
         },
     ]
 
@@ -84,6 +96,7 @@ const deleteApplicant = async (_id: string) => {
 }
 
 export default {
+    isExist,
     createApplicant,
     updateApplicant,
     getApplicants,
