@@ -185,20 +185,38 @@ const getCampaigns = async (search: string, page: number, limit: number) => {
                 preserveNullAndEmptyArrays: true,
             },
         },
-
+        {
+            $addFields: {
+                product_image_url: {
+                    $cond: {
+                        if: { $gt: ["$product_details.product_image_key", null] },
+                        then: { $function: { body: `function(key) { return ${s3GetURL.toString()}(key); }`, args: ["$product_details.product_image_key"], lang: "js" } },
+                        else: null
+                    }
+                },
+                logo_image_url: {
+                    $cond: {
+                        if: { $gt: ["$logo_image_key", null] },
+                        then: { $function: { body: `function(key) { return ${s3GetURL.toString()}(key); }`, args: ["$logo_image_key"], lang: "js" } },
+                        else: null
+                    }
+                }
+            }
+        }
     ]
 
     const res = await Campaign.aggregate([
         ...pipeline,
+        {
+            $sort: { createdAt: -1 },
+        },
         {
             $skip: (page - 1) * limit,
         },
         {
             $limit: limit,
         },
-        {
-            $sort: { createdAt: -1 },
-        },
+
     ])
     const count = await Campaign.aggregate([
         ...pipeline,
@@ -207,16 +225,8 @@ const getCampaigns = async (search: string, page: number, limit: number) => {
         },
     ])
 
-    const campaignsWithSignedUrl = res.map(campaign => {
-        if (campaign?.product_details?.product_image_key || campaign?.logo_image_key) {
-            campaign.product_image_url = s3GetURL(campaign?.product_details?.product_image_key);
-            campaign.logo_image_url = s3GetURL(campaign?.logo_image_key);
-        }
-        return campaign;
-    });
-
     return {
-        data: campaignsWithSignedUrl,
+        data: res,
         count: count[0]?.total,
     }
 }
@@ -233,7 +243,7 @@ const getUserCampaigns = async (user_id: string, search: string, page: number, l
             {
                 $match: {
                     user_id: new mongoose.Types.ObjectId(user_id),
-                    $or: [{ campaign_title: searchRegex }],
+                    campaign_title: searchRegex,
                 },
             },
             {
@@ -300,19 +310,37 @@ const getUserCampaigns = async (user_id: string, search: string, page: number, l
                     preserveNullAndEmptyArrays: true,
                 },
             },
+            {
+                $addFields: {
+                    product_image_url: {
+                        $cond: {
+                            if: { $gt: ["$product_details.product_image_key", null] },
+                            then: { $function: { body: `function(key) { return ${s3GetURL.toString()}(key); }`, args: ["$product_details.product_image_key"], lang: "js" } },
+                            else: null
+                        }
+                    },
+                    logo_image_url: {
+                        $cond: {
+                            if: { $gt: ["$logo_image_key", null] },
+                            then: { $function: { body: `function(key) { return ${s3GetURL.toString()}(key); }`, args: ["$logo_image_key"], lang: "js" } },
+                            else: null
+                        }
+                    }
+                }
+            }
         ]
 
         const res = await Campaign.aggregate([
             ...pipeline,
             {
+                $sort: { createdAt: -1 },
+            },
+            {
                 $skip: (page - 1) * limit,
             },
             {
                 $limit: limit,
-            },
-            {
-                $sort: { createdAt: -1 },
-            },
+            }
         ])
         const count = await Campaign.aggregate([
             ...pipeline,
@@ -321,16 +349,16 @@ const getUserCampaigns = async (user_id: string, search: string, page: number, l
             },
         ])
 
-        const campaignsWithSignedUrl = res.map(campaign => {
-            if (campaign?.product_details?.product_image_key || campaign?.logo_image_key) {
-                campaign.product_image_url = s3GetURL(campaign?.product_details?.product_image_key);
-                campaign.logo_image_url = s3GetURL(campaign?.logo_image_key);
-            }
-            return campaign;
-        });
+        // const campaignsWithSignedUrl = res.map(campaign => {
+        //     if (campaign?.product_details?.product_image_key || campaign?.logo_image_key) {
+        //         campaign.product_image_url = s3GetURL(campaign?.product_details?.product_image_key);
+        //         campaign.logo_image_url = s3GetURL(campaign?.logo_image_key);
+        //     }
+        //     return campaign;
+        // });
 
         return {
-            data: campaignsWithSignedUrl,
+            data: res,
             count: count[0]?.total,
         }
     } catch (error) {
@@ -427,6 +455,24 @@ const getAppliedCampaigns = async (user_id: string, search: string, page: number
                     preserveNullAndEmptyArrays: true,
                 },
             },
+            {
+                $addFields: {
+                    product_image_url: {
+                        $cond: {
+                            if: { $gt: ["$product_details.product_image_key", null] },
+                            then: { $function: { body: `function(key) { return ${s3GetURL.toString()}(key); }`, args: ["$product_details.product_image_key"], lang: "js" } },
+                            else: null
+                        }
+                    },
+                    logo_image_url: {
+                        $cond: {
+                            if: { $gt: ["$logo_image_key", null] },
+                            then: { $function: { body: `function(key) { return ${s3GetURL.toString()}(key); }`, args: ["$logo_image_key"], lang: "js" } },
+                            else: null
+                        }
+                    }
+                }
+            }
         ]
 
         const res = await Campaign.aggregate([
@@ -442,7 +488,6 @@ const getAppliedCampaigns = async (user_id: string, search: string, page: number
             },
         ])
 
-        console.log({ res })
         const count = await Campaign.aggregate([
             ...pipeline,
             {
@@ -450,20 +495,8 @@ const getAppliedCampaigns = async (user_id: string, search: string, page: number
             },
         ])
 
-
-        const campaignsWithSignedUrl = res.map(campaign => {
-            if (campaign?.product_details?.product_image_key) {
-                campaign.product_image_url = s3GetURL(campaign?.product_details?.product_image_key);
-            }
-            if (campaign?.logo_image_key) {
-                campaign.logo_image_url = s3GetURL(campaign?.logo_image_key);
-            }
-
-            return campaign;
-        });
-
         return {
-            data: campaignsWithSignedUrl,
+            data: res,
             count: count[0]?.total,
         }
     } catch (error) {

@@ -67,13 +67,13 @@ const getApplicants = async (search: string, campaign_id: string, filter_by: str
     const res = await Applicant.aggregate([
         ...pipeline,
         {
+            $sort: { createdAt: -1 },
+        },
+        {
             $skip: (page - 1) * limit,
         },
         {
             $limit: limit,
-        },
-        {
-            $sort: { createdAt: -1 },
         },
     ])
     const count = await Applicant.aggregate([
