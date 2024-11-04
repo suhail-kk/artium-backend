@@ -4,6 +4,7 @@ import { S3_BUCKET } from "@/lib/config/s3.config";
 import s3 from "@/lib/config/s3.config";
 import pusherServer from "@/lib/config/pusher.config";
 import mongoose from "mongoose";
+
 import {
   findConversationById,
   updateMessage,
@@ -46,7 +47,7 @@ export const createChat = async (req: Request, res: Response) => {
     if (!chat_id && !participants) {
       return res.status(400).json("Please include the reciever");
     }
-    if (!campaignId) {
+    if (participants && !campaignId) {
       return res.status(400).json("Invalid campaignId");
     }
 
@@ -364,7 +365,7 @@ export const markAllRead = async (req: Request, res: Response) => {
     throw new BadRequestError("something went wrong");
   }
 };
-export const getParticipipant = async (req: Request, res: Response) => {
+export const getParticipant = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id;
     const chatId = req.query.chatId as string;
@@ -375,7 +376,7 @@ export const getParticipipant = async (req: Request, res: Response) => {
     }
     //get participant
     const otherParticipant = await getParticipipantDetails(userId, chatId);
-
+    
     sendSuccessResponse(res, 'Participant details fetched succesfully', 
 		otherParticipant,
 	
