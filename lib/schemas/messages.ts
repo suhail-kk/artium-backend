@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 const { Schema, Document } = mongoose;
 import schemaNameConstants from '@/lib/constants/schemaConstants';
 import { retrieveFile } from "../utils/storage.utils";
-import User from "./user";
+import { OFFER_STATUSES } from "../constants/constants";
 
 export interface Offer{
     brief:string,
@@ -34,7 +34,6 @@ export interface MessageAttributes {
   type?:string ;
   offer?:Offer;
   parentOfferId?:mongoose.Schema.Types.ObjectId;
-  ss?:typeof User
 }
 
 const messageSchema = new Schema<MessageAttributes>(
@@ -64,6 +63,8 @@ const messageSchema = new Schema<MessageAttributes>(
         amount:Number,
         status:{
           type:String,
+          default: 'PENDING',
+          enum: OFFER_STATUSES,
          }
       },
       parentOfferId:{

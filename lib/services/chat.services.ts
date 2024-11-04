@@ -201,9 +201,14 @@ export const getRecentConversations = async (
               {
                 profileImageOriginal: {
                   $cond: {
-                    if: { $eq: ["$$participant.type", "Creator"] }, // Check if the type is User
-                    then: s3GetURL(s3paths.userProfileImage + "$$participant._id"), // Add the profile image URL
-                    else: null, // Or set to null if it's not a User
+                    if: { $eq: ["$$participant.type", "Creator"] }, 
+                    then: {
+                      $concat: [
+                        s3GetURL(s3paths.userProfileImage), 
+                        { $toString: "$$participant.id" } 
+                      ]
+                    },
+                    else: null,
                   },
                 },
               },
@@ -242,9 +247,24 @@ export const getRecentConversations = async (
       },
       {
         $addFields: {
-          campaignImageOriginal: s3GetURL(s3paths.campaignLogoImage + 'campaignId'),
-        },
-      }
+          "campaign.campaignImageUrl": {
+            $concat: [s3GetURL(s3paths.campaignLogoImage), { $toString: "$campaignId" }]
+          }
+        }
+      },
+      {
+        $unwind:{
+          path:'$participantsData',
+          preserveNullAndEmptyArrays: true,
+        }
+      },
+  
+    {
+        $unwind:{
+          path:'$campaign',
+          preserveNullAndEmptyArrays: true,
+        }
+      },
     ];
 
     //  search 
@@ -268,7 +288,6 @@ export const getRecentConversations = async (
         $project: {
           participants: "$participantsData",
           campaign:"$campaign",
-          campaignImageUrl:'$campaignImageOriginal',
           unreadCount:'$unreadCount',
           latestMessage: {
             $cond: {
@@ -279,7 +298,6 @@ export const getRecentConversations = async (
           },
           _id: 1,
           latestMessageCreatedAt: 1,
-          conversation_name: 1,
           type: 1,
           unreadBy: 1,
         },
@@ -319,7 +337,7 @@ export const getRecentConversations = async (
 
 export const findConversationById = async (chat_id: string) => {
   try {
-    return await ConversationModel.findById({ _id: chat_id })
+    return await ConversationModel.findOne({ _id: new mongoose.Types.ObjectId(chat_id) })
       .populate({
         path: "participants",
         model: "users",
@@ -492,3 +510,152 @@ export const getUnreadMessagesCount = async (chatId: string,userId:string) => {
     throw new Error("Failed to fetch unread messages count.");
   }
 };
+
+export const markAllMessagesRead = async (chatId:string,userId:string) => {
+
+    return await messages.updateMany(
+      {
+        chat_id: new mongoose.Types.ObjectId(chatId),
+        seen: false,
+        sender_id: { $ne: new mongoose.Types.ObjectId(userId) },
+      },
+      { $set: { seen: true } }
+    );
+
+  }
+  export const getParticipipantDetails = async (
+    userId: string,
+    chatId:string
+  ) => {
+  
+    try {
+  
+      //aggrgation pipeline
+      const pipeline: any = [
+        {
+          $match: {
+            _id:new mongoose.Types.ObjectId(chatId)
+          },
+        },
+      
+    {
+      $lookup: {
+        from: "users",
+        localField: "participants.id",
+        foreignField: "_id",
+        as: "userParticipants",
+      },
+    },
+  
+    {
+      $lookup: {
+        from: "brands",
+        localField: "participants.id",
+        foreignField: "_id",
+        as: "brandParticipants",
+      },
+    },
+    {
+      $addFields: {
+        participantsData: {
+          $map: {
+            input: {
+              $filter: {
+                input: "$participants",
+                as: "participant",
+                cond: { $ne: ["$$participant.id", new mongoose.Types.ObjectId(userId)] },
+              },
+            },
+            as: "participant",
+
+            in: {
+              $mergeObjects: [
+                "$$participant",
+                {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: {
+                          $cond: {
+                            if: { $eq: ["$$participant.type", "Brand"] },
+                            then: "$brandParticipants",
+                            else: "$userParticipants",
+                          },
+                        },
+                        as: "details",
+                        cond: { $eq: ["$$details._id", "$$participant.id"] },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                {
+                  profileImageOriginal: {
+                    $cond: {
+                      if: { $eq: ["$$participant.type", "Creator"] }, 
+                      then: {
+                        $concat: [
+                          s3GetURL(s3paths.userProfileImage), 
+                          { $toString: "$$participant.id" }
+                        ]
+                      },
+                      else: null,
+                    },
+                  },
+                }
+               
+              ],
+            },
+          },
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "campaigns",
+        localField: "campaignId",
+        foreignField: "_id",
+        as: "campaign",
+      },
+    },
+  {
+      $unwind:{
+        path:'$campaign',
+        preserveNullAndEmptyArrays: true,
+      }
+    },
+    
+    {
+      $addFields: {
+        "campaign.campaignImageUrl": {
+          $concat: [s3GetURL(s3paths.campaignLogoImage), { $toString: "$campaignId" }]
+        }
+      }
+    }
+     ];
+
+  
+      //  projection
+      pipeline.push(
+        {
+          $project: {
+            participants: "$participantsData",
+            campaign:'$campaign',
+            _id: 1,
+            type: 1,
+          },
+        }
+      );
+  
+      // Execution 
+      const result = await ConversationModel.aggregate(pipeline);
+      return result.length > 0 ? result[0] : null;
+  
+      
+    } catch (error) {
+      console.log("Error in getRecentConversations:", error);
+      throw new Error("Failed to fetch recent conversations.");
+    }
+  };
+  
+  

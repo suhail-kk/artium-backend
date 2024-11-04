@@ -17,34 +17,11 @@ export async function createCampaign(req: Request, res: Response,
         const data = req.body
         const userId = new Types.ObjectId(req.user._id);
 
-        // const images: any = req.files || {};
-        // const logo_image = images?.logo_image ? images.logo_image[0] : null;
-        // const product_image = images?.product_image ? images.product_image[0] : null;
 
         const logoUUID = uuidv4()
-        const producutUUID = uuidv4()
+        const productUUID = uuidv4()
         const logo_image_key = `logo_images/${logoUUID}${data?.logo_image}`
-        const product_image_key = `product_images/${producutUUID}${data?.product_image}`
-
-        // if (logo_image) {
-        //     const logoUUID = uuidv4()
-        //     logo_image_key = `logo_images/${logoUUID}${logo_image?.filename}`
-        //     //upload original file in to s3
-        //     const fileUploadRes = await uploadFile({ source: logo_image.path, targetName: logo_image_key })
-        //     if (!fileUploadRes)
-        //         return new BadRequestError('Failed to upload logo image file');
-        // }
-
-        // if (product_image) {
-        //     const producutUUID = uuidv4()
-        //     product_image_key = `product_images/${producutUUID}${product_image?.filename}`
-        //     //upload original file in to s3
-        //     const fileUploadRes = await uploadFile({ source: product_image.path, targetName: product_image_key })
-
-        //     if (!fileUploadRes)
-        //         return new BadRequestError('Failed to upload product file');
-        // }
-
+        const product_image_key = `product_images/${productUUID}${data?.product_image}`
 
         const {
             campaign_title,
@@ -96,6 +73,7 @@ export async function createCampaign(req: Request, res: Response,
             max_price,
             video_script,
             logo_image_key,
+
         }
         const retVal = await campaignServices.createCampaign(campaignPayload)
 
@@ -285,5 +263,95 @@ export async function getCampaignById(req: Request, res: Response) {
         return sendSuccessResponse(res, "Campaign details fetched successfully", retVal);
     } catch (error) {
         return new BadRequestError('Failed to fetch campaign details');
+    }
+}
+
+export async function getUserCampaigns(req: Request, res: Response) {
+    try {
+        const user = req.user
+        const user_id = user?._id as string
+        const search = req.query.search as string
+        const limit = parseInt((req.query.limit as string) || '10')
+        const page = parseInt((req.query.page as string) || '1')
+
+        if (!user_id) {
+            throw new Error('User ID is required')
+        }
+
+        const { data, count } = await campaignServices.getUserCampaigns(
+            user_id,
+            search,
+            page || 1,
+            limit || 10
+        )
+
+        const totalPages = Math.ceil(count / limit)
+        return sendSuccessResponse(res, "My campaign fetched successfully", {
+            data: data,
+            meta: {
+                page: page,
+                limit: limit,
+                total: count,
+                totalPages,
+            }, status: 200
+        });
+
+    } catch (error) {
+        return new BadRequestError('Failed to fetch My campaigns');
+    }
+}
+
+export async function getAppliedCampaigns(req: Request, res: Response) {
+    try {
+        const user = req.user
+        const user_id = user?._id as string
+        const search = req.query.search as string
+        const limit = parseInt((req.query.limit as string) || '10')
+        const page = parseInt((req.query.page as string) || '1')
+
+        if (!user_id) {
+            throw new Error('User ID is required')
+        }
+        const { data, count } = await campaignServices.getAppliedCampaigns(
+            user_id,
+            search,
+            page || 1,
+            limit || 10
+        )
+
+        const totalPages = Math.ceil(count / limit)
+        return sendSuccessResponse(res, "Applied campaigns fetched successfully", {
+            data: data,
+            meta: {
+                page: page,
+                limit: limit,
+                total: count,
+                totalPages,
+            }, status: 200
+        });
+
+    } catch (error) {
+        return new BadRequestError('Failed to fetch Applied campaigns');
+    }
+}
+
+export async function getNumberOfApplicant(req: Request, res: Response) {
+    try {
+        const campaign_id = req.query?.campaign_id as string
+
+        if (!campaign_id) {
+            return createErrorResponse({ message: 'Campaign ID is required and must be a string' }, 400);
+        }
+
+        const retVal = await campaignServices.getNumberOfApplicants(
+            campaign_id
+        )
+
+        return sendSuccessResponse(res, "Applied campaigns fetched successfully", {
+            data: retVal, status: 200
+        });
+
+    } catch (error) {
+        return new BadRequestError('Failed to fetch Applied campaigns');
     }
 }
