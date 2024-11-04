@@ -8,6 +8,10 @@ const productsSchema = new mongoose.Schema<IProduct>({
         type: Schema.Types.ObjectId,
         ref: schemaNameConstants.brandSchema,
     },
+    user_id: {
+        type: Schema.Types.ObjectId,
+        ref: schemaNameConstants.userSchema,
+    },
     product_title: {
         type: String,
         required: true,

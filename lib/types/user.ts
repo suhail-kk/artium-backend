@@ -20,7 +20,10 @@ type city = {
 	placeId?: string;
 	name?: string;
 };
-
+export enum userTypes{
+	CREATOR='Creator',
+	BRAND='Brand'
+}
 export interface IupdateUser {
 	firstName: string;
 	lastName: string;
