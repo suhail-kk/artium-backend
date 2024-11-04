@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 
+import { Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid'
 
 import { BadRequestError } from '@/lib/utils/errors/errors';
@@ -8,12 +9,13 @@ import productServices from '@/lib/services/product.services'
 import campaignServices from '@/lib/services/campaign.services'
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { s3PutURL } from '@/lib/utils/s3utils';
+import { deleteS3Object } from '@/lib/utils/storage.utils';
 
 export async function createCampaign(req: Request, res: Response,
     next: NextFunction) {
     try {
         const data = req.body
-        const user = req.user
+        const userId = new Types.ObjectId(req.user._id);
 
 
         const logoUUID = uuidv4()
@@ -35,7 +37,6 @@ export async function createCampaign(req: Request, res: Response,
             product_description,
             video_types,
             brand_id,
-            user_id,
             number_of_creators,
             min_price,
             max_price,
@@ -48,12 +49,13 @@ export async function createCampaign(req: Request, res: Response,
             product_image_key,
             product_url,
             product_description,
+            user_id: userId
         }
 
         const product = await productServices.createProduct(productPayload)
 
         const campaignPayload = {
-            user_id: user_id ? user_id : user?._id,
+            user_id: userId,
             brand_id,
             end_date,
             start_date,
@@ -98,9 +100,12 @@ export async function createCampaign(req: Request, res: Response,
 
 export async function updateCampaign(req: any, res: any) {
     try {
-        const body = await req.body
+        const data = await req.body
+        const userId = new Types.ObjectId(req.user._id);
 
         const {
+            campaign_id,
+            product_id,
             campaign_title,
             campaign_description,
             end_date,
@@ -111,32 +116,61 @@ export async function updateCampaign(req: any, res: any) {
             video_notes,
             product_url,
             product_title,
-            product_image_key,
             product_description,
             video_types,
             brand_id,
-            user_id,
-            product_id,
-            campaign_id,
-            campaign_status,
             number_of_creators,
             min_price,
             max_price,
             video_script,
-        } = body
+            logo_image,
+            product_image,
+            campaign_status
+        } = data
 
+        const retVal = await campaignServices.getCampaignById(campaign_id);
+
+        let logo_image_key: string = ''
+        let product_image_key: string = ''
+        let presigned_url_logo_image: string = ''
+        let presigned_url_product_image: string = ''
+
+        if (logo_image) {
+            const logoUUID = uuidv4()
+            logo_image_key = `logo_images/${logoUUID}${logo_image}`
+
+            if (retVal?.logo_image_key) {
+                const res = await deleteS3Object(retVal?.logo_image_key)
+            }
+            presigned_url_logo_image = s3PutURL(
+                logo_image_key
+            );
+
+        }
+
+        if (product_image) {
+            const producutUUID = uuidv4()
+            product_image_key = `product_images/${producutUUID}${product_image}`
+
+            if (retVal?.product_details?.product_image_key) {
+                await deleteS3Object(retVal?.product_details?.product_image_key)
+            }
+
+            presigned_url_product_image = s3PutURL(
+                product_image_key
+            );
+        }
         const productPayload = {
             brand_id,
             product_title,
             product_image_key,
             product_url,
-            product_description,
+            product_description
         }
 
         await productServices.updateProduct(product_id, productPayload)
 
         const campaignPayload = {
-            user_id,
             brand_id,
             end_date,
             start_date,
@@ -153,14 +187,18 @@ export async function updateCampaign(req: any, res: any) {
             min_price,
             max_price,
             video_script,
-            logo_image_key: "",
+            logo_image_key,
         }
         const campaign = await campaignServices.updateCampaign(
             campaign_id,
             campaignPayload
         )
 
-        return sendSuccessResponse(res, "Campaign updated successfully", campaign);
+        return sendSuccessResponse(res, "Campaign updated successfully", {
+            data: campaign,
+            presigned_url_logo_image,
+            presigned_url_product_image
+        });
 
     } catch (error) {
         return new BadRequestError('Failed to update campaign details');
@@ -186,7 +224,7 @@ export async function deleteCampaign(req: Request, res: Response) {
 export async function getCampaigns(req: Request, res: Response) {
     try {
 
-        const search = req.query.search as string
+        const search = req.query.search as string || ''
         const limit = parseInt((req.query.limit as string) || '10')
         const page = parseInt((req.query.page as string) || '1')
 
@@ -196,7 +234,6 @@ export async function getCampaigns(req: Request, res: Response) {
             limit || 10
         )
         const totalPages = Math.ceil(count / limit)
-
 
         return sendSuccessResponse(res, "Campaign fetched successfully", {
             data: data,
