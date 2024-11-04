@@ -15,5 +15,4 @@ export interface IUpdateProduct {
     product_image_key?: string
     product_description?: string
     brand_id?: Types.ObjectId
-    user_id: Types.ObjectId
 }

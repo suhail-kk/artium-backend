@@ -24,7 +24,6 @@ export interface ICampaign {
 export interface IUpdateCampaign {
     campaign_description?: string
     brand_id?: Types.ObjectId
-    user_id?: Types.ObjectId
     campaign_title?: string
     product_id?: Types.ObjectId
     start_date?: string

@@ -8,7 +8,8 @@ import { createErrorResponse } from '@/lib/utils/apiResponse'
 import productServices from '@/lib/services/product.services'
 import campaignServices from '@/lib/services/campaign.services'
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
-import { s3DeleteURL, s3PutURL } from '@/lib/utils/s3utils';
+import { s3PutURL } from '@/lib/utils/s3utils';
+import { deleteS3Object } from '@/lib/utils/storage.utils';
 
 export async function createCampaign(req: Request, res: Response,
     next: NextFunction) {
@@ -151,46 +152,47 @@ export async function updateCampaign(req: any, res: any) {
 
         const retVal = await campaignServices.getCampaignById(campaign_id);
 
-        let logo_image_key
-        let product_image_key
-        let presigned_url_logo_image
-        let presigned_url_product_image
-        if (data?.logo_image) {
+        let logo_image_key: string = ''
+        let product_image_key: string = ''
+        let presigned_url_logo_image: string = ''
+        let presigned_url_product_image: string = ''
+
+        if (logo_image) {
             const logoUUID = uuidv4()
             logo_image_key = `logo_images/${logoUUID}${logo_image}`
-            await s3DeleteURL(retVal?.logo_image_key)
 
+            if (retVal?.logo_image_key) {
+                const res = await deleteS3Object(retVal?.logo_image_key)
+            }
             presigned_url_logo_image = s3PutURL(
                 logo_image_key
             );
 
         }
 
-        if (data?.product_image) {
+        if (product_image) {
             const producutUUID = uuidv4()
             product_image_key = `product_images/${producutUUID}${product_image}`
 
-            await s3DeleteURL(retVal?.product_details?.product_image_key)
+            if (retVal?.product_details?.product_image_key) {
+                await deleteS3Object(retVal?.product_details?.product_image_key)
+            }
 
             presigned_url_product_image = s3PutURL(
                 product_image_key
             );
         }
-
-
         const productPayload = {
             brand_id,
             product_title,
             product_image_key,
             product_url,
-            product_description,
-            user_id: userId
+            product_description
         }
 
         await productServices.updateProduct(product_id, productPayload)
 
         const campaignPayload = {
-            user_id: userId,
             brand_id,
             end_date,
             start_date,
