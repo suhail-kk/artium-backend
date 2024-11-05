@@ -69,7 +69,7 @@ export const createChat = async (req: Request, res: Response) => {
 
     const participantsArray = [
       { id: new mongoose.Types.ObjectId(actualUserId), type: roleName },
-      { id: new mongoose.Types.ObjectId(participants?.id), type: participants?.type }
+      { id: new mongoose.Types.ObjectId(participants?.id), type: participants?.role }
     ];
 
     if (offer && offer?.parent_id) {
