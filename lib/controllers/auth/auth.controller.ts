@@ -4,7 +4,7 @@ import {
 	validatePassword,
 } from '@/lib/utils/passwordUtils';
 import userServices, { getUserMe } from '@/lib/services/auth.services';
-import { IAuthUser, ICreateUser } from '@/lib/types/user';
+import { ICreateUser } from '@/lib/types/user';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { createUserJWT, verifyJWTToken } from '@/lib/utils/jwtUtils';
 import brandService from '@/lib/services/brand.service';
