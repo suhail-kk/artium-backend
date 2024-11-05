@@ -5,9 +5,10 @@ import { retrieveFile } from "../utils/storage.utils";
 import { OFFER_STATUSES } from "../constants/constants";
 
 export interface Offer{
-    brief:string,
+
     amount:number,
-    status:string
+    status:string,
+    delivery_duration:number
 }
 const offerTypeEnum = Object.freeze({
     OFFER: "Offer",
@@ -59,12 +60,12 @@ const messageSchema = new Schema<MessageAttributes>(
         required:true
       },
       offer:{
-        brief:String,
         amount:Number,
         status:{
           type:String,
           enum: OFFER_STATUSES,
-         }
+         },
+         delivery_duration:Number
       },
       parentOfferId:{
         type: Schema.Types.ObjectId,

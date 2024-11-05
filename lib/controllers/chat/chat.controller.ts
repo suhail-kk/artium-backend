@@ -114,9 +114,9 @@ export const createChat = async (req: Request, res: Response) => {
       video_url: null,
       stream_url: null,
       offer: {
-        brief:offer.brief,
-        amount:offer.amount,
-        status:offer.status||"PENDING"
+        amount:offer?.amount,
+        status:offer?.status||"PENDING",
+        delivery_duration:offer?.delivery_duration
       },
       parentOfferId: updateOfferId || null,
     };

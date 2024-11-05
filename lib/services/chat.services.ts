@@ -428,21 +428,28 @@ export const getMessagesWithUser = async (
       { $unwind: { path: "$sender", preserveNullAndEmptyArrays: true } },
       { $unwind: { path: "$parent", preserveNullAndEmptyArrays: true } },
       { $unwind: { path: "$parent.sender", preserveNullAndEmptyArrays: true } },
-      {
-        $addFields:{
-          senderImage:{
- $cond:[
-        { $eq:['$roleDetails.name','Creator']},
-        { $concat: [
-          s3GetURL(s3paths.userProfileImage), 
-          { $toString: "$sender._id" } 
-        ]},
-        { $concat: [s3GetURL(s3paths.campaignLogoImage), { $toString: "$conversation.campaignId" }]}
-    ]
-         
+      
+        {
+          $addFields: {
+            senderImage: {
+              $cond: [
+                { $eq: ['$roleDetails.name', 'Creator'] },
+                {
+                  $concat: [
+                    s3GetURL(s3paths.userProfileImage),
+                    { $toString: "$sender._id" } 
+                  ]
+                },
+                {
+                  $concat: [
+                    s3GetURL(s3paths.campaignLogoImage),
+                    { $toString: "$conversation.campaignId" } 
+                  ]
+                }
+              ]
+            }
           }
-        }
-      },
+        },
       {
         $match: {
           $or: [
@@ -477,6 +484,7 @@ export const getMessagesWithUser = async (
         $limit: size,
       },
     ];
+console.log(JSON.stringify(pipeline),"kkk");
 
     
     const messagesWithParentField = await messages.aggregate(pipeline);
