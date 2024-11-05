@@ -140,13 +140,17 @@ export const createChat = async (req: Request, res: Response) => {
 
     const chatCreated = await createMessage(createData);
 
+
     const latestMessageId = chatCreated?.id;
+    const latestMessageCreatedAt = chatCreated?.createdAt;
+    
     if (type !== "Video") {
       await conversation.findOneAndUpdate(
         { _id: chatId },
         {
           $set: {
             latestMessageId: latestMessageId,
+            latestMessageCreatedAt:latestMessageCreatedAt
           },
         },
         { upsert: true }

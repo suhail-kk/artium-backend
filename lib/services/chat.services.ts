@@ -307,6 +307,11 @@ export const getRecentConversations = async (
         },
       },
       {
+        $sort: {
+          latestMessageCreatedAt: -1, 
+        },
+      },
+      {
         $group: {
           _id: null,
           total: { $sum: 1 },
