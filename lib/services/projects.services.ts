@@ -1,6 +1,7 @@
 import { s3GetURL } from '@/lib/utils/s3utils'
 import projects from '@/lib/schemas/projects'
 import { IProjects } from '@/lib/types/projects.interface'
+import mongoose from 'mongoose'
 
 const createProject = async (data: IProjects) => {
     const res = await projects.create(data)
@@ -28,11 +29,16 @@ const updateProject = async (id: string, data: IProjects) => {
     return res
 }
 
-const getprojects = async (page: number, limit: number, type: string) => {
+const getprojects = async ({ page, limit, type, user_id }: { page: number, limit: number, type: string, user_id: string }) => {
 
     const res = await projects.aggregate([
         {
             $match: { type }
+        },
+        {
+            $match: {
+                user_id: new mongoose.Types.ObjectId(user_id),
+            },
         },
         {
             $sort: { createdAt: -1 }

@@ -96,7 +96,7 @@ const getCreators = async ({
     ];
 
 
-    const res = await User.aggregate(
+    const creators = await User.aggregate(
         [
             ...pipeline,
             {
@@ -104,12 +104,6 @@ const getCreators = async ({
             },
             {
                 $limit: limit,
-            },
-
-            {
-                $addFields: {
-                    profileImageOriginal: s3GetURL(s3paths.userProfileImage + "$_id"),
-                },
             },
             {
                 $addFields: {
@@ -132,8 +126,19 @@ const getCreators = async ({
         },
     ]);
 
+    let creatorsWithSignedUrl = []
+    if (creators?.length > 0) {
+        creatorsWithSignedUrl = creators.map(creator => {
+            if (creator?._id) {
+                creator.profileImageOriginal = s3GetURL(s3paths.userProfileImage + creator?._id);
+            }
+            return creator;
+        });
+
+    }
+
     return {
-        data: res,
+        data: creatorsWithSignedUrl,
         count: count[0]?.total || 0,
     };
 };

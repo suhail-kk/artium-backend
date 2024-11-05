@@ -44,6 +44,17 @@ const getApplicants = async (search: string, campaign_id: string, filter_by: str
             },
         },
         {
+            $addFields: {
+                fullName: {
+                    $concat: [
+                        { $arrayElemAt: ['$user_details.firstName', 0] },
+                        ' ',
+                        { $ifNull: [{ $arrayElemAt: ['$user_details.lastName', 0] }, ''] }
+                    ]
+                }
+            }
+        },
+        {
             $unwind: {
                 path: '$user_details',
                 preserveNullAndEmptyArrays: true,
@@ -52,19 +63,16 @@ const getApplicants = async (search: string, campaign_id: string, filter_by: str
         {
             $match: {
                 $or: [
+                    { fullName: searchRegex },
                     { 'user_details.firstName': searchRegex },
                     { 'user_details.lastName': searchRegex }
                 ]
             }
-        },
-        {
-            $addFields: {
-                profileImageOriginal: s3GetURL(s3paths.userProfileImage + 'user_details?._id'),
-            },
-        },
+        }
     ]
 
-    const res = await Applicant.aggregate([
+
+    const applicants = await Applicant.aggregate([
         ...pipeline,
         {
             $sort: { createdAt: -1 },
@@ -84,8 +92,20 @@ const getApplicants = async (search: string, campaign_id: string, filter_by: str
     ])
 
 
+    let applicantsWithSignedUrl = []
+    if (applicants?.length > 0) {
+        applicantsWithSignedUrl = applicants.map(applicant => {
+            if (applicant?.user_details?._id) {
+                applicant.profileImageOriginal = s3GetURL(s3paths.userProfileImage + applicant?.user_details?._id);
+            }
+            return applicant;
+        });
+
+    }
+
+
     return {
-        data: res,
+        data: applicantsWithSignedUrl,
         count: count[0]?.total,
     }
 }
