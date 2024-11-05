@@ -52,6 +52,7 @@ export const createChat = async (req: Request, res: Response) => {
     const roleName: string = req?.user?.role?.name;
     let actualUserId: string;
 
+
     if (roleName === "Brand" && req?.user?.brandId) {
       actualUserId = req.user.brandId.toString();
     } else {
@@ -71,6 +72,7 @@ export const createChat = async (req: Request, res: Response) => {
       { id: new mongoose.Types.ObjectId(actualUserId), type: roleName },
       { id: new mongoose.Types.ObjectId(participant?.id), type: participant?.role }
     ];
+
 
     if (offer && offer?.parent_id) {
       await updateOffer(offer?.parent_id, "UPDATED");
@@ -107,6 +109,7 @@ export const createChat = async (req: Request, res: Response) => {
           type: "one-to-one",
           campaignId: campaignId,
         };
+
 
         const createdParticipants = await createParticipants(data);
 
@@ -226,9 +229,17 @@ export const listConversations = async (req: Request, res: Response) => {
     const page: number = Number(req.query.page) || 1;
     const size: number = Number(req.query.size) || 15;
     const query = (req.query.query as string) || undefined;
+    const roleName: string = req?.user?.role?.name;
+    let actualUserId: string;
 
+
+    if (roleName === "Brand" && req?.user?.brandId) {
+      actualUserId = req.user.brandId.toString();
+    } else {
+      actualUserId = userId;
+    }
     let { conversations, totalPages } = await getRecentConversations(
-      userId,
+      actualUserId,
       page,
       size,
       query,
