@@ -63,8 +63,8 @@ export const createChat = async (req: Request, res: Response) => {
       })
     );
 
-    if (updateOfferId) {
-      await updateOffer(updateOfferId, "UPDATED");
+    if (offer&&offer?.parent_id) {
+      await updateOffer(offer?.parent_id, "UPDATED");
     }
     let key;
     let presignedPUTURL = "";
@@ -119,7 +119,7 @@ export const createChat = async (req: Request, res: Response) => {
         delivery_duration:offer?.delivery_duration
       },}),
      
-      parentOfferId: updateOfferId || null,
+      parentOfferId: offer?.parent_id || null,
     };
 
     const chatCreated = await createMessage(createData);
