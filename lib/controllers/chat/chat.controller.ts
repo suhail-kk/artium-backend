@@ -46,7 +46,6 @@ export const createChat = async (req: Request, res: Response) => {
       chat_id,
       participants,
       offer,
-      updateOfferId,
       campaignId,
     } = body;
     if (!chat_id && !participants) {
