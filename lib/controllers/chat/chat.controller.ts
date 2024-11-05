@@ -158,7 +158,7 @@ export const createChat = async (req: Request, res: Response) => {
       video_url: chatRes.video_url || null,
       stream_url: chatRes.stream_url || null,
       index: index ? index : 0,
-      offer:chatCreated?.offer||null
+      ...(offer&&{offer:chatCreated?.offer})
     };
 
     
