@@ -6,6 +6,7 @@ import messages from "@/lib/schemas/messages";
 
 import { s3GetURL } from '../utils/s3utils';
 import s3paths from '../constants/s3paths';
+import user from "../schemas/user";
 
 
 export const createMessage = async (data: MessageAttributes) => {
@@ -484,7 +485,6 @@ export const getMessagesWithUser = async (
         $limit: size,
       },
     ];
-console.log(JSON.stringify(pipeline),"kkk");
 
     
     const messagesWithParentField = await messages.aggregate(pipeline);
@@ -697,6 +697,8 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
       );
   
       // Execution 
+
+      
       const result = await ConversationModel.aggregate(pipeline);
       return result.length > 0 ? result[0] : null;
   
@@ -840,3 +842,29 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
     
 return result.length > 0 ? result[0] : null;
   }
+
+export const getNewParticipant=async(userId:string)=>{
+  const pipeline = [
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(userId),
+      },
+    },
+    {
+      $addFields: {
+          profileImageOriginal: {
+            $concat: [
+              s3GetURL(s3paths.userProfileImage),
+              { $toString: "$_id" },
+            ],
+          },
+          // Include other fields as needed from userDetails
+
+      },
+    },
+  ];
+
+
+  const result = await user.aggregate(pipeline);
+  return result.length > 0 ? result[0] : null;
+}

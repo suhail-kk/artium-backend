@@ -1,5 +1,5 @@
 
-import {  Request, Response } from "express";
+import { Request, Response } from "express";
 import { S3_BUCKET } from "@/lib/config/s3.config";
 import s3 from "@/lib/config/s3.config";
 import pusherServer from "@/lib/config/pusher.config";
@@ -18,7 +18,8 @@ import {
   updateOffer,
   markAllMessagesRead,
   getParticipipantDetails,
-  getOtherParticipantData
+  getOtherParticipantData,
+  getNewParticipant
 
 } from "@/lib/services/chat.services";
 import { sendSuccessResponse } from "@/lib/utils/responses/success.handler";
@@ -62,7 +63,7 @@ export const createChat = async (req: Request, res: Response) => {
       })
     );
 
-    if (offer&&offer?.parent_id) {
+    if (offer && offer?.parent_id) {
       await updateOffer(offer?.parent_id, "UPDATED");
     }
     let key;
@@ -112,12 +113,14 @@ export const createChat = async (req: Request, res: Response) => {
       is_uploaded: uploaded,
       video_url: null,
       stream_url: null,
-      ...(offer&&{ offer: {
-        amount:offer?.amount,
-        status:  offer?.status||"PENDING",
-        delivery_duration:offer?.delivery_duration
-      },}),
-     
+      ...(offer && {
+        offer: {
+          amount: offer?.amount,
+          status: offer?.status || "PENDING",
+          delivery_duration: offer?.delivery_duration
+        },
+      }),
+
       parentOfferId: offer?.parent_id || null,
     };
 
@@ -157,13 +160,15 @@ export const createChat = async (req: Request, res: Response) => {
       video_url: chatRes.video_url || null,
       stream_url: chatRes.stream_url || null,
       index: index ? index : 0,
-      ...(offer&&{offer:chatCreated?.offer})
+      ...(offer && { offer: chatCreated?.offer }),
+      url: presignedPUTURL,
+      fileKey: key
     };
 
-    
+
     res
       .status(201)
-      .send({ url: presignedPUTURL, data: sendData, fileKey: key });
+      .send({ data: sendData });
 
     //removing users deletedStatus
 
@@ -358,7 +363,7 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
       throw new BadRequestError("Invalid status option");
     }
     await updateOffer(messageId, status);
-    sendSuccessResponse(res,"Offer status updated succesefully");
+    sendSuccessResponse(res, "Offer status updated succesefully");
   } catch (error) {
     console.log("ERROR at chat controller::", error);
     throw new BadRequestError("Something went wrong");
@@ -368,7 +373,7 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
 export const markAllRead = async (req: Request, res: Response) => {
   try {
     const userId = req?.user?._id;
-    const {chat_id} = req?.body 
+    const { chat_id } = req?.body
     if (!chat_id) {
       throw new BadRequestError("Invalid conversation id");
     }
@@ -383,52 +388,71 @@ export const getParticipant = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id;
     const chatId = req.query.chatId as string;
-     // check conversation exist 
+    // check conversation exist 
     const conversationDetails = await findConversationById(chatId);
     if (!conversationDetails) {
       throw new BadRequestError("Conversation not found");
     }
     //get participant
     const otherParticipant = await getParticipipantDetails(userId, chatId);
-    
-    sendSuccessResponse(res, 'Participant details fetched succesfully', 
-		otherParticipant,
-	
-		);
+
+    sendSuccessResponse(res, 'Participant details fetched succesfully',
+      otherParticipant,
+
+    );
   } catch (error) {
     console.log("ERROR at chat controller", error);
   }
 };
 
-export const checkConversationExist=async(req:Request,res:Response)=>{
-  try{
+export const checkConversationExist = async (req: Request, res: Response) => {
+  try {
 
-    const id=req?.user?._id
-
-    
-    const roleName:string = req?.user?.role?.name; 
-const userId=id
-    const {participants}=req.body
-  
-const actualUserId = roleName === "Brand" ? req.user.brandId : userId;
+    const id = req?.user?._id
 
 
-if (!actualUserId) {
-  throw new Error("User ID is undefined");
-}
+    const roleName: string = req?.user?.role?.name;
+    const userId = id
+    const { participant, chatId, campaignId } = req.body
 
-// Create participants array
-const participantsArray = [
-  { id: actualUserId, type: roleName },
-  { id: new mongoose.Types.ObjectId(participants?.id), type: participants?.role }
-];
-const conversation =await findConversationByParticipants(participantsArray)
+    if (chatId) {
+      const conversationDetails = await findConversationById(chatId);
+      if (!conversationDetails) {
+        throw new BadRequestError("Conversation not found");
+      }
+      sendSuccessResponse(res, "success", conversationDetails);
+    }
 
 
-  const data = await getOtherParticipantData(conversation?._id,actualUserId,roleName)
-  return res.status(200).json(data||participants)
-  }catch(error){
+
+    const actualUserId = roleName === "Brand" ? req.user.brandId : userId;
+
+
+    if (!actualUserId) {
+      throw new Error("User ID is undefined");
+    }
+
+    // Create participants array
+    const participantsArray = [
+      { id: actualUserId, type: roleName },
+      { id: new mongoose.Types.ObjectId(participant?.id), type: participant?.role }
+    ];
+    const conversation = await findConversationByParticipants(participantsArray)
+
+    if (conversation) {
+      const data = await getOtherParticipantData(conversation?._id, actualUserId, roleName)
+
+      sendSuccessResponse(res, 'Participant details fetched succesfully',
+        data,)
+    }
+    else {
+      const newParticipant = await getNewParticipant(participant?.id)
+      sendSuccessResponse(res, 'Participant details fetched succesfully',
+        newParticipant,)
+    }
+
+  } catch (error) {
     console.log(error);
-    
+
   }
 }
