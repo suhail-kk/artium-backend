@@ -10,6 +10,6 @@ router.get('/listMessages',listMessages)
 router.put('/update/:id',updateChat)
 router.put('/offer/update',updateOfferStatus)
 router.put("/readAllMessages",markAllRead)
-router.get('/getParticipant',getParticipant)
+router.post('/getParticipant',checkConversationExist)
 router.post('/checkConversation',checkConversationExist)
 export { router };      
