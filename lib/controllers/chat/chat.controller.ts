@@ -45,7 +45,7 @@ export const createChat = async (req: Request, res: Response) => {
       index,
       file,
       chat_id,
-      participants,
+      participant,
       offer,
       campaignId,
     } = body;
@@ -59,17 +59,17 @@ export const createChat = async (req: Request, res: Response) => {
     }
 
 
-    if (!chat_id && !participants) {
+    if (!chat_id && !participant) {
       return res.status(400).json("Please include the reciever");
     }
-    if (participants && !campaignId) {
+    if (participant && !campaignId) {
       return res.status(400).json("Invalid campaignId");
     }
 
 
     const participantsArray = [
       { id: new mongoose.Types.ObjectId(actualUserId), type: roleName },
-      { id: new mongoose.Types.ObjectId(participants?.id), type: participants?.type }
+      { id: new mongoose.Types.ObjectId(participant?.id), type: participant?.role }
     ];
 
     if (offer && offer?.parent_id) {
