@@ -74,14 +74,19 @@ export async function deleteProject(req: Request, res: Response) {
 
 export async function getProjects(req: Request, res: Response) {
     try {
+        const profile_id = req.user?._id as string
+        const guest_user_id = req.query?.user_id as string
         const type = (req.query.type as string) || 'additional';
         const limit = parseInt((req.query.limit as string) || '10')
         const page = parseInt((req.query.page as string) || '1')
 
         const { data, count } = await projectsServices.getprojects(
-            page || 1,
-            limit || 10,
-            type
+            {
+                type,
+                page: page || 1,
+                limit: limit || 10,
+                user_id: guest_user_id ? guest_user_id : profile_id,
+            }
         )
         const totalPages = Math.ceil(count / limit)
 

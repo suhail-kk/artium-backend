@@ -1,3 +1,4 @@
+import campaignServices from '@/lib/services/campaign.services';
 import Campaign from '@/lib/schemas/campaign'
 import { ICampaign, IUpdateCampaign } from '@/lib/types/campaign.interface'
 import schemaNameConstants from '@/lib/constants/schemaConstants'
@@ -34,6 +35,14 @@ const getCampaignById = async (id: string) => {
                 localField: 'user_id',
                 foreignField: '_id',
                 as: 'user_details',
+            },
+        },
+        {
+            $lookup: {
+                from: schemaNameConstants.applicantsSchema,
+                localField: '_id',
+                foreignField: 'campaign_id',
+                as: 'applicants',
             },
         },
         {
@@ -92,6 +101,11 @@ const getCampaignById = async (id: string) => {
                 preserveNullAndEmptyArrays: true,
             },
         },
+        {
+            $addFields: {
+                applicants_count: { $size: "$applicants" }
+            }
+        }
     ]
 
     const res = await Campaign.aggregate(pipeline).exec()
@@ -99,6 +113,7 @@ const getCampaignById = async (id: string) => {
     if (!res || res.length === 0) {
         return null;
     }
+
 
     let logo_image_preview = ""
     let product_image_preview = ""
@@ -115,8 +130,8 @@ const getCampaignById = async (id: string) => {
 
     const data = {
         ...res[0],
-        product_image_preview,
         logo_image_preview,
+        product_image_preview,
     };
 
     return data;
@@ -172,6 +187,14 @@ const getCampaigns = async (search: string, page: number, limit: number) => {
                 as: 'video_types_details',
             },
         },
+        {
+            $lookup: {
+                from: schemaNameConstants.applicantsSchema,
+                localField: '_id',
+                foreignField: 'campaign_id',
+                as: 'applicants',
+            },
+        },
     ];
 
     const unwindStages: PipelineStage.Unwind[] = [
@@ -199,7 +222,14 @@ const getCampaigns = async (search: string, page: number, limit: number) => {
                 preserveNullAndEmptyArrays: true,
             },
         },
+
     ];
+
+    const addFieldStage: PipelineStage.AddFields = {
+        $addFields: {
+            applicants_count: { $size: '$applicants' }
+        },
+    };
 
     const sortStage: PipelineStage.Sort = {
         $sort: { createdAt: -1 },
@@ -218,6 +248,7 @@ const getCampaigns = async (search: string, page: number, limit: number) => {
         matchStage,
         ...lookupStages,
         ...unwindStages,
+        addFieldStage,
         sortStage,
         ...paginationStages,
     ];
@@ -313,6 +344,14 @@ const getUserCampaigns = async (user_id: string, search: string, page: number, l
                 },
             },
             {
+                $lookup: {
+                    from: schemaNameConstants.applicantsSchema,
+                    localField: '_id',
+                    foreignField: 'campaign_id',
+                    as: 'applicants',
+                },
+            },
+            {
                 $unwind: {
                     path: '$user_details',
                     preserveNullAndEmptyArrays: true,
@@ -336,6 +375,11 @@ const getUserCampaigns = async (user_id: string, search: string, page: number, l
                     preserveNullAndEmptyArrays: true,
                 },
             },
+            {
+                $addFields: {
+                    applicants_count: { $size: '$applicants' }
+                },
+            }
         ]
 
         const campaigns = await Campaign.aggregate([
@@ -385,7 +429,7 @@ const getUserCampaigns = async (user_id: string, search: string, page: number, l
 const getAppliedCampaigns = async (user_id: string, search: string, page: number, limit: number) => {
     try {
         console.log(user_id)
-        const searchRegex = new RegExp(search, 'i')
+        // const searchRegex = new RegExp(search, 'i')
         const pipeline = [
             {
                 $lookup: {
@@ -447,6 +491,14 @@ const getAppliedCampaigns = async (user_id: string, search: string, page: number
                 },
             },
             {
+                $lookup: {
+                    from: schemaNameConstants.applicantsSchema,
+                    localField: '_id',
+                    foreignField: 'campaign_id',
+                    as: 'applicants',
+                },
+            },
+            {
                 $unwind: {
                     path: '$user_details',
                     preserveNullAndEmptyArrays: true,
@@ -470,6 +522,11 @@ const getAppliedCampaigns = async (user_id: string, search: string, page: number
                     preserveNullAndEmptyArrays: true,
                 },
             },
+            {
+                $addFields: {
+                    applicants_count: { $size: '$applicants' }
+                },
+            }
         ]
 
         const campaigns = await Campaign.aggregate([

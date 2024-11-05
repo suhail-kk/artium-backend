@@ -18,10 +18,8 @@ export async function createCampaign(req: Request, res: Response,
         const userId = new Types.ObjectId(req.user._id);
 
 
-        const logoUUID = uuidv4()
-        const productUUID = uuidv4()
-        const logo_image_key = `logo_images/${logoUUID}${data?.logo_image}`
-        const product_image_key = `product_images/${productUUID}${data?.product_image}`
+
+
 
         const {
             campaign_title,
@@ -42,6 +40,27 @@ export async function createCampaign(req: Request, res: Response,
             max_price,
             video_script,
         } = data
+
+
+        let logo_image_key: string = ""
+        let product_image_key: string = ""
+        let presigned_url_logo_image: string = ""
+        let presigned_url_product_image: string = ""
+
+        if (data?.logo_image) {
+            const logoUUID = uuidv4()
+            logo_image_key = `logo_images/${logoUUID}${data?.logo_image}`
+            presigned_url_logo_image = s3PutURL(
+                logo_image_key
+            );
+        }
+        if (product_image_key) {
+            const productUUID = uuidv4()
+            product_image_key = `product_images/${productUUID}${data?.product_image}`
+            presigned_url_product_image = s3PutURL(
+                product_image_key
+            );
+        }
 
         const productPayload = {
             brand_id,
@@ -80,12 +99,8 @@ export async function createCampaign(req: Request, res: Response,
         // const presigned_url_logo_image = s3GetURL(logo_image_key);
         // const presigned_url_product_image = s3GetURL(product_image_key);
 
-        const presigned_url_logo_image = s3PutURL(
-            logo_image_key
-        );
-        const presigned_url_product_image = s3PutURL(
-            product_image_key
-        );
+
+
 
         return sendSuccessResponse(res, "Campaign created successfully", {
             data: retVal,
