@@ -203,20 +203,6 @@ export const getRecentConversations = async (
                 ],
               },
               {
-                profileImageOriginal: {
-                  $cond: {
-                    if: { $eq: ["$$participant.type", "Creator"] }, 
-                    then: {
-                      $concat: [
-                        s3GetURL(s3paths.userProfileImage), 
-                        { $toString: "$$participant.id" } 
-                      ]
-                    },
-                    else: null,
-                  },
-                },
-              },
-              {
 
                   unreadCount: { $arrayElemAt: ["$unreadMessages.unreadCount", 0] 
                 },
@@ -248,13 +234,6 @@ export const getRecentConversations = async (
           foreignField: "_id",
           as: "campaign",
         },
-      },
-      {
-        $addFields: {
-          "campaign.campaignImageUrl": {
-            $concat: [s3GetURL(s3paths.campaignLogoImage), { $toString: "$campaignId" }]
-          }
-        }
       },
       {
         $unwind:{
@@ -397,7 +376,7 @@ export const getMessagesWithUser = async (
       },
       {
         $lookup: {
-          from: "roles", // Collection containing role details
+          from: "roles", 
           localField: "sender.role",
           foreignField: "_id",
           as: "roleDetails",
@@ -435,36 +414,36 @@ export const getMessagesWithUser = async (
       { $unwind: { path: "$parent", preserveNullAndEmptyArrays: true } },
       { $unwind: { path: "$parent.sender", preserveNullAndEmptyArrays: true } },
       
-        {
-          $addFields: {
-            senderImage: {
-              $cond: [
-                { $eq: ['$roleDetails.name', 'Creator'] },
-                {
-                  $concat: [
-                    s3GetURL(s3paths.userProfileImage),
-                    { $toString: "$sender._id" } 
-                  ]
-                },
-                {
-                  $concat: [
-                    s3GetURL(s3paths.campaignLogoImage),
-                    { $toString: "$conversation.campaignId" } 
-                  ]
-                }
-              ]
-            }
-          }
-        },
+        // {
+        //   $addFields: {
+        //     senderImage: {
+        //       $cond: [
+        //         { $eq: ['$roleDetails.name', 'Creator'] },
+        //         {
+        //           $concat: [
+        //             s3GetURL(s3paths.userProfileImage),
+        //             { $toString: "$sender._id" } 
+        //           ]
+        //         },
+        //         {
+        //           $concat: [
+        //             s3GetURL(s3paths.campaignLogoImage),
+        //             { $toString: "$conversation.campaignId" } 
+        //           ]
+        //         }
+        //       ]
+        //     }
+        //   }
+        // },
       {
         $match: {
           $or: [
             {
-              file_type: { $in: [null, "Text", "text", "offer"] },
+              file_type: { $in: [null, "Text", "Offer"] },
               is_uploaded: false,
             },
             {
-              file_type: { $in: ["video"] },
+              file_type: { $in: ["Video"] },
               is_uploaded: true,
             },
           ],
@@ -479,7 +458,6 @@ export const getMessagesWithUser = async (
         $project: {
           parentMessages: 0,
           parentSenders: 0,
-          conversation:0,
           roleDetails:0
         },
       },
