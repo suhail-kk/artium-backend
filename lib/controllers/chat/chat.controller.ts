@@ -49,6 +49,16 @@ export const createChat = async (req: Request, res: Response) => {
       offer,
       campaignId,
     } = body;
+    const roleName: string = req?.user?.role?.name;
+    let actualUserId: string;
+
+    if (roleName === "Brand" && req?.user?.brandId) {
+      actualUserId = req.user.brandId.toString();
+    } else {
+      actualUserId = userId;
+    }
+
+
     if (!chat_id && !participants) {
       return res.status(400).json("Please include the reciever");
     }
@@ -56,12 +66,11 @@ export const createChat = async (req: Request, res: Response) => {
       return res.status(400).json("Invalid campaignId");
     }
 
-    const participantsArray = participants?.map(
-      (participant: ParticipantRequestData) => ({
-        id: new mongoose.Types.ObjectId(participant?.id),
-        type: participant?.type,
-      })
-    );
+
+    const participantsArray = [
+      { id: new mongoose.Types.ObjectId(actualUserId), type: roleName },
+      { id: new mongoose.Types.ObjectId(participants?.id), type: participants?.type }
+    ];
 
     if (offer && offer?.parent_id) {
       await updateOffer(offer?.parent_id, "UPDATED");
@@ -98,7 +107,9 @@ export const createChat = async (req: Request, res: Response) => {
           type: "one-to-one",
           campaignId: campaignId,
         };
+
         const createdParticipants = await createParticipants(data);
+
         chatId = createdParticipants?.id;
       }
     }
