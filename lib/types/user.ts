@@ -67,7 +67,15 @@ export interface IUser {
 	email: string;
 	firstName: string;
 	password: string;
-	role: string;
+	role: {
+		_id: mongoose.Schema.Types.ObjectId,
+		name: string,
+		type: string,
+		description:string,
+		__v: 0,
+		createdAt: Date,
+		updatedAt: Date
+	  },
 	brandId?: mongoose.Schema.Types.ObjectId;
 	location: string;
 	leadDescription: string;
@@ -91,3 +99,4 @@ export interface IBrand {
 	instagramLink: string;
 	brandDescription: string;
 }
+

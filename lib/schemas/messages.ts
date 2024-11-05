@@ -63,7 +63,6 @@ const messageSchema = new Schema<MessageAttributes>(
         amount:Number,
         status:{
           type:String,
-          default: 'PENDING',
           enum: OFFER_STATUSES,
          }
       },

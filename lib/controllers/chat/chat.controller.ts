@@ -18,6 +18,8 @@ import {
   updateOffer,
   markAllMessagesRead,
   getParticipipantDetails,
+  getOtherParticipantData
+
 } from "@/lib/services/chat.services";
 import { sendSuccessResponse } from "@/lib/utils/responses/success.handler";
 import { OFFER_STATUSES } from "@/lib/constants/constants";
@@ -25,6 +27,9 @@ import conversation, { IParticipant } from "@/lib/schemas/conversation";
 import { BadRequestError } from "@/lib/utils/errors/errors";
 import { createS3FileKey } from "@/lib/utils/fileHelper";
 import { ParticipantRequestData } from "@/lib/types/chat.interface";
+
+
+
 
 export const createChat = async (req: Request, res: Response) => {
   try {
@@ -108,7 +113,11 @@ export const createChat = async (req: Request, res: Response) => {
       is_uploaded: uploaded,
       video_url: null,
       stream_url: null,
-      offer: offer,
+      offer: {
+        brief:offer.brief,
+        amount:offer.amount,
+        status:offer.status||"PENDING"
+      },
       parentOfferId: updateOfferId || null,
     };
 
@@ -137,7 +146,7 @@ export const createChat = async (req: Request, res: Response) => {
       message: chatCreated?.message,
       file_type: chatCreated?.file_type,
       seen: chatCreated?.seen,
-      sender_id: chatRes.sender_id,
+      sender_id: chatCreated?.sender_id,
       sender: chatRes.sender,
       chat_id: chatId,
       parent: chatRes.parent || null,
@@ -148,7 +157,10 @@ export const createChat = async (req: Request, res: Response) => {
       video_url: chatRes.video_url || null,
       stream_url: chatRes.stream_url || null,
       index: index ? index : 0,
+      offer:chatCreated?.offer||null
     };
+
+    
     res
       .status(201)
       .send({ url: presignedPUTURL, data: sendData, fileKey: key });
@@ -163,6 +175,7 @@ export const createChat = async (req: Request, res: Response) => {
         return user?.id;
       }
     );
+
 
     if (type !== "Video") {
       participantUserIds.map(async (user_id: string) => {
@@ -193,6 +206,7 @@ export const listConversations = async (req: Request, res: Response) => {
   try {
     const userId = req?.user?._id;
 
+
     const page: number = Number(req.query.page) || 1;
     const size: number = Number(req.query.size) || 15;
     const query = (req.query.query as string) || undefined;
@@ -201,7 +215,7 @@ export const listConversations = async (req: Request, res: Response) => {
       userId,
       page,
       size,
-      query
+      query,
     );
 
     res.status(200).json({
@@ -354,7 +368,7 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
 export const markAllRead = async (req: Request, res: Response) => {
   try {
     const userId = req?.user?._id;
-    const chat_id = req?.query?.chat_id as string;
+    const {chat_id} = req?.body 
     if (!chat_id) {
       throw new BadRequestError("Invalid conversation id");
     }
@@ -385,3 +399,36 @@ export const getParticipant = async (req: Request, res: Response) => {
     console.log("ERROR at chat controller", error);
   }
 };
+
+export const checkConversationExist=async(req:Request,res:Response)=>{
+  try{
+
+    const id=req?.user?._id
+
+    
+    const roleName:string = req?.user?.role?.name; 
+const userId=id
+    const {participants}=req.body
+  
+const actualUserId = roleName === "Brand" ? req.user.brandId : userId;
+
+
+if (!actualUserId) {
+  throw new Error("User ID is undefined");
+}
+
+// Create participants array
+const participantsArray = [
+  { id: actualUserId, type: roleName },
+  { id: new mongoose.Types.ObjectId(participants?.id), type: participants?.role }
+];
+const conversation =await findConversationByParticipants(participantsArray)
+
+
+  const data = await getOtherParticipantData(conversation?._id,actualUserId,roleName)
+  return res.status(200).json(data||participants)
+  }catch(error){
+    console.log(error);
+    
+  }
+}
