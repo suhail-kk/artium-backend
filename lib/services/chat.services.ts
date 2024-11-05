@@ -120,7 +120,7 @@ export const getRecentConversations = async (
         $match: {
           participants: {
             $elemMatch: {
-              id: new mongoose.Types.ObjectId(userId),
+              id:  new mongoose.Types.ObjectId(userId),
             },
           },
         },
