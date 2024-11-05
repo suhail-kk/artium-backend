@@ -7,6 +7,7 @@ import messages from "@/lib/schemas/messages";
 import { s3GetURL } from '../utils/s3utils';
 import s3paths from '../constants/s3paths';
 
+
 export const createMessage = async (data: MessageAttributes) => {
   return await Messages.create(data);
 };
@@ -21,27 +22,29 @@ export const createParticipants = async (data: conversationsAttributes) => {
 export const findConversationByParticipants = async (
   participant_ids: any
 ) => {
-  try {
-    const conversation = await ConversationModel.findOne({
-      participants: {
-        $all: participant_ids,
-      },
-    })
-      .populate({
-        path: "participants",
-        model: "users",
-        localField: "participants",
-        foreignField: "_id",
-      })
-      .populate({
-        path: "latestMessageId",
-        model: "messages",
-        localField: "latestMessageId",
-        foreignField: "_id",
-      })
-      .exec();
 
-    return conversation;
+  try {
+    const pipeline=[
+      {
+        $match: {
+          participants: {
+            $all: participant_ids.map((participant:any) => ({
+              $elemMatch: {
+                id: participant.id,
+                type: participant.type
+              }
+            }))
+          }
+        }
+      }
+    ]
+
+    
+    const conversation = await ConversationModel.aggregate(pipeline);
+
+    // Return the first conversation if any
+    return conversation.length > 0 ? conversation[0] : null;
+
   } catch (error) {
     console.error(error, "error:Message service");
     return null;
@@ -321,6 +324,8 @@ export const getRecentConversations = async (
     );
 
     // Execution 
+
+    
     const result = await ConversationModel.aggregate(pipeline);
     return {
       conversations: result[0]?.documents || [],
@@ -386,6 +391,24 @@ export const getMessagesWithUser = async (
       },
       {
         $lookup: {
+          from: "roles", // Collection containing role details
+          localField: "sender.role",
+          foreignField: "_id",
+          as: "roleDetails",
+        },
+      },
+      {
+        $lookup:{
+          from: "conversations", 
+          localField: "chat_id",
+          foreignField: "_id",
+          as: "conversation",
+        }
+      },
+      { $unwind: { path: "$conversation", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$roleDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
           from: "messages",
           localField: "reply_To",
           foreignField: "_id",
@@ -405,6 +428,21 @@ export const getMessagesWithUser = async (
       { $unwind: { path: "$sender", preserveNullAndEmptyArrays: true } },
       { $unwind: { path: "$parent", preserveNullAndEmptyArrays: true } },
       { $unwind: { path: "$parent.sender", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields:{
+          senderImage:{
+ $cond:[
+        { $eq:['$roleDetails.name','Creator']},
+        { $concat: [
+          s3GetURL(s3paths.userProfileImage), 
+          { $toString: "$sender._id" } 
+        ]},
+        { $concat: [s3GetURL(s3paths.campaignLogoImage), { $toString: "$conversation.campaignId" }]}
+    ]
+         
+          }
+        }
+      },
       {
         $match: {
           $or: [
@@ -428,6 +466,8 @@ export const getMessagesWithUser = async (
         $project: {
           parentMessages: 0,
           parentSenders: 0,
+          conversation:0,
+          roleDetails:0
         },
       },
       {
@@ -438,6 +478,7 @@ export const getMessagesWithUser = async (
       },
     ];
 
+    
     const messagesWithParentField = await messages.aggregate(pipeline);
     return messagesWithParentField;
   } catch (error) {
@@ -659,3 +700,135 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
   };
   
   
+  export const getOtherParticipantData=async(chatId:string,id:string|mongoose.Schema.Types.ObjectId,type:string)=>{
+    
+    const pipeline=[
+          {
+            $match:{
+            _id: new mongoose.Types.ObjectId(chatId)
+            }
+          },
+          {
+            $lookup:{
+              from:'users',
+              localField:'participants.id',
+              foreignField:'_id',
+              as:'userParticipants'
+            }
+          },
+          {
+            $lookup:{
+              from:'brands',
+              localField:'participants.id',
+              foreignField:'_id',
+              as:'brandParticipants'
+            }
+          },
+          {
+            $addFields: {
+              participantsData: {
+                $map: {
+                  input: {
+                    $filter: {
+                      input: "$participants",
+                      as: "participant",
+                      cond: { $ne: ["$$participant.id", id] },
+                    },
+                  },
+                  as: "participant",
+                  in: {
+                    $mergeObjects: [
+                      "$$participant",
+                      {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: {
+                                $cond: {
+                                  if: { $eq: ["$$participant.type", "Brand"] },
+                                  then: "$brandParticipants",
+                                  else: "$userParticipants",
+                                },
+                              },
+                              as: "details",
+                              cond: { $eq: ["$$details._id", "$$participant.id"] },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      {
+                        profileImageOriginal: {
+                          $cond: {
+                            if: { $eq: ["$$participant.type", "Creator"] }, 
+                            then: {
+                              $concat: [
+                                s3GetURL(s3paths.userProfileImage), 
+                                { $toString: "$$participant.id" } 
+                              ]
+                            },
+                            else: null,
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+          {
+            $lookup: {
+              from: "campaigns",
+              localField: "campaignId",
+              foreignField: "_id",
+              as: "campaign",
+            },
+          },
+          {
+            $addFields: {
+              "campaign.campaignImageUrl": {
+                $concat: [s3GetURL(s3paths.campaignLogoImage), { $toString: "$campaignId" }]
+              }
+            }
+          },
+          {
+            $unwind: {
+              path: '$participantsData',
+              preserveNullAndEmptyArrays: true,
+            }
+          },
+          {
+            $unwind: {
+              path: '$campaign',
+              preserveNullAndEmptyArrays: true,
+            }
+          },
+          {
+            $project: {
+              participants: "$participantsData",
+              campaign: "$campaign",
+              _id: 1,
+            },
+          },
+          {
+            $group: {
+              _id: "$_id",
+              participant: { $first: "$participants" }, 
+              campaign: { $first: "$campaign" } 
+            }
+          },
+          {
+            $project: {
+              _id: 0,
+              participant: 1,
+              campaign: 1
+            }
+          }
+    ]
+
+    
+    const result = await ConversationModel.aggregate(pipeline);
+    
+return result.length > 0 ? result[0] : null;
+  }

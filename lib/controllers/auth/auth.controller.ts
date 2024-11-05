@@ -4,20 +4,15 @@ import {
 	validatePassword,
 } from '@/lib/utils/passwordUtils';
 import userServices, { getUserMe } from '@/lib/services/auth.services';
-import { ICreateUser } from '@/lib/types/user';
+import { IAuthUser, ICreateUser } from '@/lib/types/user';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { createUserJWT, verifyJWTToken } from '@/lib/utils/jwtUtils';
 import brandService from '@/lib/services/brand.service';
 import { IUser, IBrand, IbrandObject } from '@/lib/types/user';
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import roleService from '@/lib/services/role.service';
-declare global {
-	namespace Express {
-		interface Request {
-			user: IUser; // Define the type for req.user
-		}
-	}
-}
+
+
 const prepareBrandData = async (
 	name: string,
 	email: string,

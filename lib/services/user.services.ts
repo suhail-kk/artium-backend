@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 import User from "../schemas/user";
 import Role from "../schemas/roles"; // Import Role model
-import { IupdateUser } from "../types/user";
+import {  IupdateUser } from "../types/user";
 import { s3GetURL } from "../utils/s3utils";
 import s3paths from "../constants/s3paths";
 import { ObjectId } from "mongodb";
@@ -60,8 +60,8 @@ const getRole = async (id: string) => {
   return await Role.findOne({ _id: id });
 };
 
-const getUserByEmail = async (email: string) => {
-  const user = await User.findOne({ email: email, deletedAt: null });
+ const getUserByEmail = async (email: string) => {
+  const user = await User.findOne({ email: email, deletedAt: null }).populate('role');
   return user ? user?.toJSON() : null;
 };
 
@@ -101,7 +101,10 @@ export const getUserProifleById = async (_id: string) => {
 const getUser = async (id: any) => {
   return await User.findOne({ _id: new mongoose.Types.ObjectId(id) });
 };
-
+export const getUserById=async(id:string)=>{
+  const user= await User.findById({_id:new mongoose.Types.ObjectId(id)}).populate('role')
+  return user
+}
 export default {
   createUser,
   checkUser,
