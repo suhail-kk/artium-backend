@@ -409,29 +409,26 @@ export const checkConversationExist = async (req: Request, res: Response) => {
   try {
 
     const id = req?.user?._id
-
-
     const roleName: string = req?.user?.role?.name;
     const userId = id
-    const { participant, chatId, campaignId } = req.body
+    const actualUserId = roleName === "Brand" ? req.user.brandId : userId;
+
+    if (!actualUserId) {
+      throw new Error("User ID is undefined");
+    }
+    const { participant, chatId } = req.body
 
     if (chatId) {
       const conversationDetails = await findConversationById(chatId);
       if (!conversationDetails) {
         throw new BadRequestError("Conversation not found");
       }
+      const data = await getOtherParticipantData(conversationDetails?._id, actualUserId, roleName)
+
+      sendSuccessResponse(res, 'Participant details fetched succesfully',
+        data,)
       sendSuccessResponse(res, "success", conversationDetails);
     }
-
-
-
-    const actualUserId = roleName === "Brand" ? req.user.brandId : userId;
-
-
-    if (!actualUserId) {
-      throw new Error("User ID is undefined");
-    }
-
     // Create participants array
     const participantsArray = [
       { id: actualUserId, type: roleName },
@@ -441,7 +438,6 @@ export const checkConversationExist = async (req: Request, res: Response) => {
 
     if (conversation) {
       const data = await getOtherParticipantData(conversation?._id, actualUserId, roleName)
-
       sendSuccessResponse(res, 'Participant details fetched succesfully',
         data,)
     }
