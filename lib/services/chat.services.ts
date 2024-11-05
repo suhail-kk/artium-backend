@@ -819,20 +819,23 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
               participants: "$participantsData",
               campaign: "$campaign",
               _id: 1,
+              chat_id:'$_id'
             },
           },
           {
             $group: {
               _id: "$_id",
               participant: { $first: "$participants" }, 
-              campaign: { $first: "$campaign" } 
+              campaign: { $first: "$campaign" } ,
+              chat_id: { $first: "$chat_id" },
             }
           },
           {
             $project: {
-              _id: 0,
+              _id: 1,
               participant: 1,
-              campaign: 1
+              campaign: 1,
+              chat_id:1
             }
           }
     ]
