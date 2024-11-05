@@ -113,11 +113,12 @@ export const createChat = async (req: Request, res: Response) => {
       is_uploaded: uploaded,
       video_url: null,
       stream_url: null,
-      offer: {
+      ...(offer&&{ offer: {
         amount:offer?.amount,
-        status:offer?.status||"PENDING",
+        status:  offer?.status||"PENDING",
         delivery_duration:offer?.delivery_duration
-      },
+      },}),
+     
       parentOfferId: updateOfferId || null,
     };
 
