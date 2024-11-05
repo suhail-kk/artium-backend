@@ -3,11 +3,11 @@ const { Schema } = mongoose;
 import schemaNameConstants from '@/lib/constants/schemaConstants';
 import { userTypes } from "../types/user";
 export interface IParticipant {
-  id?: mongoose.Types.ObjectId;
+  id: mongoose.Types.ObjectId|string;
   type:{type:string,enum:userTypes},
-  unreadBy:boolean,
-  deletedBy:boolean
-  archivedBy:boolean
+  unreadBy?:boolean,
+  deletedBy?:boolean
+  archivedBy?:boolean
 
 }
 export interface conversationsAttributes {
