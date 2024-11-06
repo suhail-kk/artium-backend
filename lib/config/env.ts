@@ -16,6 +16,10 @@ type EnvConfig = {
 	APP_NAME: string;
 	ALLOW_ORIGINS: string[];
 	JWT_KEY: string;
+	PUSHER_APP_ID:string;
+	PUSHER_KEY_ID:string;
+	PUSHER_SECRET_KEY:string;
+	PUSHER_CLUSTER:string;
 };
 
 const parseOrigins = (origins: string | undefined): string[] => {
@@ -36,6 +40,10 @@ const ENV: EnvConfig = {
 	APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'MyApp',
 	ALLOW_ORIGINS: parseOrigins(process.env.ALLOW_ORIGINS),
 	JWT_KEY: process.env.JWT_KEY || '',
+	PUSHER_APP_ID: process.env.PUSHER_APP_ID||'',
+    PUSHER_KEY_ID: process.env.PUSHER_KEY_ID||'',
+    PUSHER_SECRET_KEY: process.env.PUSHER_SECRET_ID||'',
+    PUSHER_CLUSTER: process.env.PUSHER_CLUSTER||'',
 };
 
 // Optional: Throw an error if critical env variables are missing (for server-side only vars)
@@ -53,5 +61,9 @@ if (!ENV.REGION) throw new Error('Missing environment variable: REGION');
 if (!ENV.ALLOW_ORIGINS)
 	throw new Error('Missing environment variable: ALLOW_ORIGINS');
 if (!ENV.JWT_KEY) throw new Error('Missing environment variable: JWT_KEY');
+if (!ENV.PUSHER_APP_ID) throw new Error('Missing environment variable: PUSHER_APP_ID');
+if (!ENV.PUSHER_KEY_ID) throw new Error('Missing environment variable: PUSHER_KEY_ID');
+if (!ENV.PUSHER_SECRET_KEY) throw new Error('Missing environment variable: PUSHER_SECRET_KEY');
+if (!ENV.PUSHER_CLUSTER) throw new Error('Missing environment variable: PUSHER_CLUSTER');
 
 export { ENV };

@@ -6,29 +6,40 @@ import { validImageTypes } from '@/lib/utils/fileHelper';
 
 export const userUpdateValidator = () => {
 	return validateParams([
-		body('firstName').notEmpty().withMessage('First name is required'),
-		body('lastName').notEmpty().withMessage('Last name is required'),
+		body('firstName')
+			.notEmpty()
+			.withMessage('First name is required')
+			.isLength({ max: userRules.name.max })
+			.withMessage(`First name not to exceed ${userRules.name.max} characters`),
+		body('lastName')
+			.notEmpty()
+			.withMessage('Last name is required')
+			.isLength({ max: userRules.name.max })
+			.withMessage(`Last name not to exceed ${userRules.name.max} characters`),
+		body('about')
+			.optional()
+			.isLength({ max: userRules.about.max })
+			.withMessage(`about should be within ${userRules.about.max} characters`),
 		body('email')
 			.notEmpty()
 			.withMessage('Email is required')
 			.isEmail()
 			.withMessage('Not a valid email'),
-		body('profileImage.size')
+		body('profileImage')
 			.optional()
 			.custom((value) => {
-				if (!value.size) return true;
-
-				if (value.size >= userRules.profileImage.max) {
-					throw new Error('Profile image size to be less than 2 MB');
-				}
-				if (typeof value.type !== 'string') {
-					throw new Error('profileImage type must be a string');
-				}
-
-				if (!validImageTypes.includes(value.type)) {
-					throw new Error(
-						'Invalid image type. Allowed types are: jpeg, png, gif, webp'
-					);
+				if (typeof value == 'object') {
+					if (value.size >= userRules.profileImage.max) {
+						throw new Error('Profile image size to be less than 2 MB');
+					}
+					if (typeof value.type !== 'string') {
+						throw new Error('profileImage type must be a string');
+					}
+					if (!validImageTypes.includes(value.type)) {
+						throw new Error(
+							'Invalid image type. Allowed types are: jpeg, png, gif, webp'
+						);
+					}
 				}
 				return true;
 			}),

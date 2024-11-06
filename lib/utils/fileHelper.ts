@@ -1,5 +1,5 @@
+import { v4 as uuidv4 } from "uuid";
 type FileCategory = 'image' | 'video' | 'audio' | 'document' | 'other';
-
 interface FileInfo {
 	extension: string;
 	category: FileCategory;
@@ -10,6 +10,13 @@ export const validImageTypes = [
 	'image/png',
 	'image/gif',
 	'image/webp',
+];
+
+export const validVideoTypes = [
+	'video/mp4',
+	'video/quicktime',
+	'video/x-msvideo',
+	'video/webm',
 ];
 
 // Map of MIME types to file extensions and categories
@@ -70,3 +77,8 @@ export function getFileExtensionAndCategory(mimeType: string): FileInfo {
 	// Default case when MIME type is not recognized
 	return { extension: 'unknown', category: 'other' };
 }
+
+export const createS3FileKey = (module:string,userId:string, fileName:string) => {
+	const uuid = uuidv4(); // Generate a unique ID for the file
+	return `${module}/${userId}/${uuid}${fileName}`; // Construct the S3 key
+  };

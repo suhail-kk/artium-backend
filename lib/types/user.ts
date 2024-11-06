@@ -20,7 +20,10 @@ type city = {
 	placeId?: string;
 	name?: string;
 };
-
+export enum userTypes{
+	CREATOR='Creator',
+	BRAND='Brand'
+}
 export interface IupdateUser {
 	firstName: string;
 	lastName: string;
@@ -32,6 +35,7 @@ export interface IupdateUser {
 	interests: interest[];
 	languages: language[];
 	city: city;
+	savedUsers: string[];
 	contacts: number[];
 	socialLinks: string[];
 	profileImage?: {
@@ -63,7 +67,15 @@ export interface IUser {
 	email: string;
 	firstName: string;
 	password: string;
-	role: string;
+	role: {
+		_id: mongoose.Schema.Types.ObjectId,
+		name: string,
+		type: string,
+		description:string,
+		__v: 0,
+		createdAt: Date,
+		updatedAt: Date
+	  },
 	brandId?: mongoose.Schema.Types.ObjectId;
 	location: string;
 	leadDescription: string;
@@ -87,3 +99,4 @@ export interface IBrand {
 	instagramLink: string;
 	brandDescription: string;
 }
+
