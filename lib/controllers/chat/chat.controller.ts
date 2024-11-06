@@ -4,7 +4,8 @@ import { S3_BUCKET } from "@/lib/config/s3.config";
 import s3 from "@/lib/config/s3.config";
 import pusherServer from "@/lib/config/pusher.config";
 import mongoose from "mongoose";
-
+import { s3GetURL } from '@/lib/utils/s3utils';
+import s3paths from '@/lib/constants/s3paths';
 import {
   findConversationById,
   updateMessage,
@@ -52,7 +53,7 @@ export const createChat = async (req: Request, res: Response) => {
     const roleName: string = req?.user?.role?.name;
     let actualUserId: string;
 
-
+    let conversationExist
     if (roleName === "Brand" && req?.user?.brandId) {
       actualUserId = req.user.brandId.toString();
     } else {
@@ -102,6 +103,7 @@ export const createChat = async (req: Request, res: Response) => {
 
       if (conversation) {
         chatId = conversation._id;
+        conversationExist=true
       } else {
         const data = {
           participants: participantsArray,
@@ -140,13 +142,17 @@ export const createChat = async (req: Request, res: Response) => {
 
     const chatCreated = await createMessage(createData);
 
+
     const latestMessageId = chatCreated?.id;
+    const latestMessageCreatedAt = chatCreated?.createdAt;
+    
     if (type !== "Video") {
       await conversation.findOneAndUpdate(
         { _id: chatId },
         {
           $set: {
             latestMessageId: latestMessageId,
+            latestMessageCreatedAt:latestMessageCreatedAt
           },
         },
         { upsert: true }
@@ -176,7 +182,8 @@ export const createChat = async (req: Request, res: Response) => {
       index: index ? index : 0,
       ...(offer && { offer: chatCreated?.offer }),
       url: presignedPUTURL,
-      fileKey: key
+      fileKey: key,
+      ...(conversationExist &&{chatId:chatId})
     };
 
 
@@ -244,7 +251,23 @@ export const listConversations = async (req: Request, res: Response) => {
       size,
       query,
     );
+const updatedConversation=conversations?.map((conversation:any)=>{
+// console.log(conversation,"cc2");
+if(conversation?.participants?.type==="Creator"){
+  const profileImage= s3GetURL(s3paths.userProfileImage + conversation?.participants?.id)
+  conversation.participants.profileImageOriginal=profileImage
+  return conversation
+}
+else if(conversation?.participants?.type==="Brand")  {
+  if (conversation?.campaign?.product_details?.product_image_key || conversation?.campaign?.logo_image_key) {
+    conversation.campaign.product_image_url = s3GetURL(conversation?.campaign?.product_details?.product_image_key);
+    conversation.campaign.logo_image_url = s3GetURL(conversation?.campaign?.logo_image_key);
+return conversation
+}
+}
 
+
+})
     res.status(200).json({
       data: conversations,
       meta: {
@@ -261,7 +284,7 @@ export const listConversations = async (req: Request, res: Response) => {
 export const listMessages = async (req: Request, res: Response) => {
   try {
     const page: number = Number(req.query.page) || 1;
-    const size: number = Number(req.query.size) || 30;
+    const size: number = Number(req.query.size) || 15;
     const chat_id = (req.query.chat_id as string) || undefined;
     const body = req.body;
 
@@ -296,10 +319,26 @@ export const listMessages = async (req: Request, res: Response) => {
     const chats = await getMessagesWithUser(chatId, page, size);
     const getTotalCount = await getMessagesCount(chatId);
 
+    const updatedMessages=chats?.map((chat:any)=>{
+      if(chat?.file_type==="Video"){
+        const fileUrl=s3GetURL(chat?.file)
+        chat.url=fileUrl
+      
+      }
+      if(chat?.sender?.brandId){
+
+        chat.senderImage= s3GetURL(s3paths.campaignLogoImage+chat.conversation?.campaignId) 
+      }
+      else if(!chat?.sender?.brandId){
+       chat.senderImage= s3GetURL(s3paths.userProfileImage + chat?.sender_id)
+      }
+
+      return chat
+    })
     const totalPages = Math.ceil(getTotalCount / size);
     return res
       .status(200)
-      .json({ data: chats, meta: { page, size, totalPages } });
+      .json({ data: updatedMessages, meta: { page, size, totalPages } });
   } catch (error) {
     console.log("ERROR at chat controller::", error);
     throw new BadRequestError("Something went wrong");

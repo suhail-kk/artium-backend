@@ -42,6 +42,7 @@ const conversationSchema = new Schema<conversationsAttributes>(
       required:true
     },
     latestMessageId: { type: mongoose.Types.ObjectId, ref: "messages" },
+    latestMessageCreatedAt: Date,
     campaignId:{type:Schema.Types.ObjectId,ref:schemaNameConstants?.campaignsSchema}
   },
   {
