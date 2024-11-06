@@ -58,6 +58,9 @@ const userSchema = new mongoose.Schema(
 			type: [Schema.Types.ObjectId],
 			ref: schemaNameConstants.languagesSchema,
 		},
+		savedUsers: {
+			type: [Schema.Types.ObjectId],
+		},
 		country: { type: String },
 		city: { type: String },
 		contacts: { type: [Number] },

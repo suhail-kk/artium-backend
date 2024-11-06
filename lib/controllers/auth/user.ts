@@ -15,8 +15,9 @@ import { calculateUserStrength } from '@/lib/utils/helper';
 export async function getUser(req: Request, res: Response, next: NextFunction) {
 	try {
 		const { _id } = req?.user;
+		const userId = req.query.userId as string
 		// const _id = '67120a2c63617601bf94ea07';
-		const user: any = await getUserProifleById(_id);
+		const user: any = await getUserProifleById(userId ? userId : _id);
 		if (!user) throw new BadRequestError("User doesn't exists");
 		// const sanitizedUserData = await getSanitizedUserData(user._id);
 		sendSuccessResponse(res, 'Success', {

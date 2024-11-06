@@ -1,12 +1,12 @@
 import Product from '@/lib/schemas/products'
-import { IProduct } from '@/lib/types/products.interface'
+import { IProduct, IUpdateProduct } from '@/lib/types/products.interface'
 
 const createProduct = async (data: IProduct) => {
     const res = await Product.create(data)
     return res
 }
 
-const updateProduct = async (id: string, data: IProduct) => {
+const updateProduct = async (id: string, data: IUpdateProduct) => {
     const res = await Product.updateOne(
         {
             _id: id,
