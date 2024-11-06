@@ -3,7 +3,7 @@ const router = express.Router();
 import { upload } from "@/lib/utils/storage.utils";
 import {createChat,updateChat,listConversations,listMessages,updateOfferStatus, markAllRead, getParticipant,checkConversationExist} from '@/lib/controllers/chat/chat.controller'
 
-router.post("/create", upload.single('file'), createChat)
+router.post("/create", createChat)
 
 router.get('/listChats',listConversations)
 router.get('/listMessages',listMessages)

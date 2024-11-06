@@ -367,6 +367,8 @@ export const updateChat = async (req: Request, res: Response) => {
       },
       { upsert: true }
     );
+
+    
     let url
     if(chatRes?.file){
        url=s3GetURL(chatRes?.file)
