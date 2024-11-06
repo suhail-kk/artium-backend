@@ -53,7 +53,7 @@ export const createChat = async (req: Request, res: Response) => {
     const roleName: string = req?.user?.role?.name;
     let actualUserId: string;
 
-
+    let conversationExist
     if (roleName === "Brand" && req?.user?.brandId) {
       actualUserId = req.user.brandId.toString();
     } else {
@@ -103,6 +103,7 @@ export const createChat = async (req: Request, res: Response) => {
 
       if (conversation) {
         chatId = conversation._id;
+        conversationExist=true
       } else {
         const data = {
           participants: participantsArray,
@@ -181,7 +182,8 @@ export const createChat = async (req: Request, res: Response) => {
       index: index ? index : 0,
       ...(offer && { offer: chatCreated?.offer }),
       url: presignedPUTURL,
-      fileKey: key
+      fileKey: key,
+      ...(conversationExist &&{chatId:chatId})
     };
 
 
