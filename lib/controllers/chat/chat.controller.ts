@@ -252,15 +252,15 @@ export const listConversations = async (req: Request, res: Response) => {
     );
 
     const updatedConversation =conversations?.map((conversation:any)=>{
-      if(con?.participants?.type==="Creator"){
+      if(conversation?.participants?.type==="Creator"){
         
-        const profileImage= s3GetURL(s3paths.userProfileImage + con?.participants?.id)
-        con.participants.profileImageOriginal=profileImage
+        const profileImage= s3GetURL(s3paths.userProfileImage + conversation?.participants?.id)
+        conversation.participants.profileImageOriginal=profileImage
       }
-      if(con?.campaign){
-        con.campaignImageUrl=s3GetURL(con?.campaign?.logo_image_key) 
+      if(conversation?.campaign){
+        conversation.campaignImageUrl=s3GetURL(conversation?.campaign?.logo_image_key) 
       }
-      return con
+      return conversation
     })
 
 
@@ -354,6 +354,8 @@ export const updateChat = async (req: Request, res: Response) => {
 
     await updateMessage(updateData, id);
     const chatRes = await findMessageById(id);
+    console.log(chatRes,"cc22");
+    
     if (!chatRes) {
       return res.status(404).json({ message: "Message not found." }); // Handle the error appropriately
     }
@@ -367,6 +369,15 @@ export const updateChat = async (req: Request, res: Response) => {
       },
       { upsert: true }
     );
+    let url
+    
+//     if(chatRes?.file){
+// console.log(chatRes?.file,"ff333");
+
+//        url=s3GetURL(chatRes?.file)
+//        console.log(url,"fff");
+       
+//     }
     const sendData = {
       id: chatRes?.id,
       message: chatRes?.message,
@@ -382,6 +393,7 @@ export const updateChat = async (req: Request, res: Response) => {
       thumbnail_url: chatRes.thumbnail_url || null,
       video_url: chatRes.video_url || null,
       stream_url: chatRes.stream_url || null,
+      url:url||null
     };
     const responseData = { ...sendData, ...updateData };
     res.send(responseData);
