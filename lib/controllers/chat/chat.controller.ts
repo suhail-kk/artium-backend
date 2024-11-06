@@ -253,11 +253,10 @@ export const listConversations = async (req: Request, res: Response) => {
 
     const updatedConversation =conversations?.map((conversation:any)=>{
       if(conversation?.participants?.type==="Creator"){
-        
         const profileImage= s3GetURL(s3paths.userProfileImage + conversation?.participants?.id)
         conversation.participants.profileImageOriginal=profileImage
       }
-      if(conversation?.campaign){
+      if(conversation?.campaign?.logo_image_key){
         conversation.campaignImageUrl=s3GetURL(conversation?.campaign?.logo_image_key) 
       }
       return conversation
