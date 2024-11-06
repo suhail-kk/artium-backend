@@ -354,8 +354,6 @@ export const updateChat = async (req: Request, res: Response) => {
 
     await updateMessage(updateData, id);
     const chatRes = await findMessageById(id);
-    console.log(chatRes,"cc22");
-    
     if (!chatRes) {
       return res.status(404).json({ message: "Message not found." }); // Handle the error appropriately
     }
@@ -370,14 +368,9 @@ export const updateChat = async (req: Request, res: Response) => {
       { upsert: true }
     );
     let url
-    
-//     if(chatRes?.file){
-// console.log(chatRes?.file,"ff333");
-
-//        url=s3GetURL(chatRes?.file)
-//        console.log(url,"fff");
-       
-//     }
+    if(chatRes?.file){
+       url=s3GetURL(chatRes?.file)
+    }
     const sendData = {
       id: chatRes?.id,
       message: chatRes?.message,
@@ -415,6 +408,7 @@ export const updateChat = async (req: Request, res: Response) => {
     await pusherServer
       .trigger(unreadChannel, "unread_message", { unreadCount: 1 })
       .catch((err: any) => console.log("unread message event error", err));
+      return
   } catch (error) {
     console.log("ERROR at chat controller::", error);
     throw new BadRequestError("Something went wrong");
