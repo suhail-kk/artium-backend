@@ -204,23 +204,23 @@ export const createChat = async (req: Request, res: Response) => {
 
 
     if (type !== "Video") {
-      participantUserIds.map(async (user_id: string) => {
+      // participantUserIds.map(async (user_id: string) => {
         await pusherServer
           .trigger(channel, "new_message", sendData)
           .catch((err: any) => console.log("pusher error🛑", err));
-        let newChatChannelName = `new-chat-${user_id}`;
+        let newChatChannelName = `new-chat-${chatId}`;
         await pusherServer
-          .trigger(newChatChannelName, "new-contact", { userId: user_id,chatId:chatId })
+          .trigger(newChatChannelName, "new-contact", { chatId:chatId })
           .catch((err: any) =>
             console.log({ location: "previous chat event trigger", err })
           );
         // }
-        const unreadChannel = `server-${user_id}`;
+        const unreadChannel = `server-${chatId}`;
 
         await pusherServer
           .trigger(unreadChannel, "unread_message", { unreadCount: 1 })
           .catch((err: any) => console.log("unread message event error", err));
-      });
+      // });
     }
   } catch (error) {
     console.log("ERROR at chat controller::", error);
