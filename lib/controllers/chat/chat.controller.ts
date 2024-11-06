@@ -32,7 +32,6 @@ import { ParticipantRequestData } from "@/lib/types/chat.interface";
 
 
 
-
 export const createChat = async (req: Request, res: Response) => {
   try {
     const body = req.body;
@@ -251,25 +250,22 @@ export const listConversations = async (req: Request, res: Response) => {
       size,
       query,
     );
-const updatedConversation=conversations?.map((conversation:any)=>{
-// console.log(conversation,"cc2");
-if(conversation?.participants?.type==="Creator"){
-  const profileImage= s3GetURL(s3paths.userProfileImage + conversation?.participants?.id)
-  conversation.participants.profileImageOriginal=profileImage
-  return conversation
-}
-else if(conversation?.participants?.type==="Brand")  {
-  if (conversation?.campaign?.product_details?.product_image_key || conversation?.campaign?.logo_image_key) {
-    conversation.campaign.product_image_url = s3GetURL(conversation?.campaign?.product_details?.product_image_key);
-    conversation.campaign.logo_image_url = s3GetURL(conversation?.campaign?.logo_image_key);
-return conversation
-}
-}
+
+    const updatedConversation =conversations?.map((conversation:any)=>{
+      if(con?.participants?.type==="Creator"){
+        
+        const profileImage= s3GetURL(s3paths.userProfileImage + con?.participants?.id)
+        con.participants.profileImageOriginal=profileImage
+      }
+      if(con?.campaign){
+        con.campaignImageUrl=s3GetURL(con?.campaign?.logo_image_key) 
+      }
+      return con
+    })
 
 
-})
     res.status(200).json({
-      data: conversations,
+      data: updatedConversation,
       meta: {
         page,
         size,

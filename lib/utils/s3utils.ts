@@ -11,6 +11,7 @@ AWS.config.update({ credentials, region: ENV.REGION, signatureVersion: 'v4' });
 var s3 = new AWS.S3();
 
 export const s3GetURL = (key: string) => {
+	
 	return s3.getSignedUrl('getObject', {
 		Bucket: ENV.BUCKET_NAME,
 		Key: key,
