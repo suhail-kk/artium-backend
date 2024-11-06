@@ -70,6 +70,7 @@ export const findMessageById = async (message_id: string) => {
           foreignField: "_id",
         },
       })
+      .lean() 
       .exec();
   
     const { _id, reply_To, sender_id, ...rest } = messageDetails
