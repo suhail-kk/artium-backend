@@ -355,7 +355,7 @@ export const updateChat = async (req: Request, res: Response) => {
     await updateMessage(updateData, id);
     const chatRes = await findMessageById(id);
     if (!chatRes) {
-      return res.status(404).json({ message: "Message not found." }); // Handle the error appropriately
+      return res.status(404).json({ message: "Message not found." }); 
     }
     const latestMessageId = chatRes?.id;
     await conversation.findOneAndUpdate(
@@ -389,8 +389,10 @@ export const updateChat = async (req: Request, res: Response) => {
       url:url||null
     };
     const responseData = { ...sendData, ...updateData };
-    res.send(responseData);
+    sendSuccessResponse(res, 'Update chat response',
+      responseData,
 
+    );
     await pusherServer
       .trigger(channel, "new_message", responseData)
       .catch((err: any) => console.log(err, "update chat controller"));
