@@ -202,6 +202,7 @@ export const createChat = async (req: Request, res: Response) => {
     );
 
 
+
     if (type !== "Video") {
       participantUserIds.map(async (user_id: string) => {
         await pusherServer
@@ -209,7 +210,7 @@ export const createChat = async (req: Request, res: Response) => {
           .catch((err: any) => console.log("pusher error🛑", err));
         let newChatChannelName = `new-chat-${user_id}`;
         await pusherServer
-          .trigger(newChatChannelName, "new-contact", { userId: user_id })
+          .trigger(newChatChannelName, "new-contact", { userId: user_id,chatId:chatId })
           .catch((err: any) =>
             console.log({ location: "previous chat event trigger", err })
           );
