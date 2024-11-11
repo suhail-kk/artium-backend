@@ -156,7 +156,7 @@ export const getRecentConversations = async (
               $and: [
                 { $eq: ["$chat_id", "$$chatId"] },
                 { $eq: ["$seen", false] },
-                { $ne: ["$sender_id", new mongoose.Types.ObjectId(userId)] },
+                { $ne: ["$sender_id", new mongoose.Types.ObjectId(userId)] }, //
               ],
             },
           },
