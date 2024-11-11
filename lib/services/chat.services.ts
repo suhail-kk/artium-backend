@@ -109,6 +109,7 @@ export const getUnreadCount = async (chatId: string, userId: string) => {
 };
 export const getRecentConversations = async (
   userId: string,
+  actualUserId:string,
   page: number,
   pageSize: number,
   searchValue: string|undefined
@@ -121,7 +122,7 @@ export const getRecentConversations = async (
         $match: {
           participants: {
             $elemMatch: {
-              id:  new mongoose.Types.ObjectId(userId),
+              id:  new mongoose.Types.ObjectId(actualUserId),
             },
           },
         },
@@ -155,7 +156,7 @@ export const getRecentConversations = async (
               $and: [
                 { $eq: ["$chat_id", "$$chatId"] },
                 { $eq: ["$seen", false] },
-                { $ne: ["$sender_id", new mongoose.Types.ObjectId(userId)] },
+                { $ne: ["$sender_id", new mongoose.Types.ObjectId(userId)] }, //
               ],
             },
           },
@@ -178,7 +179,7 @@ export const getRecentConversations = async (
             $filter: {
               input: "$participants",
               as: "participant",
-              cond: { $ne: ["$$participant.id", new mongoose.Types.ObjectId(userId)] },
+              cond: { $ne: ["$$participant.id", new mongoose.Types.ObjectId(actualUserId)] },
             },
           },
           as: "participant",
