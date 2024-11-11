@@ -246,6 +246,7 @@ export const listConversations = async (req: Request, res: Response) => {
       actualUserId = userId;
     }
     let { conversations, totalPages } = await getRecentConversations(
+      userId,
       actualUserId,
       page,
       size,
