@@ -493,10 +493,18 @@ export const checkConversationExist = async (req: Request, res: Response) => {
         throw new BadRequestError("Conversation not found");
       }
       const data = await getOtherParticipantData(conversationDetails?._id, actualUserId, roleName)
-
-      sendSuccessResponse(res, 'Participant details fetched succesfully',
+      const participant=data?.participant
+      const campaign=data?.campaign
+      if(participant?.type==="Creator"){
+        const profileImage= s3GetURL(s3paths.userProfileImage +participant?.id)
+        data.participant.profileImageOriginal=profileImage
+      }
+      if(campaign?.logo_image_key){
+        data.campaign.campaignImageUrl=s3GetURL(campaign?.logo_image_key) 
+      }
+       return sendSuccessResponse(res, 'Participant details fetched succesfully',
         data,)
-      sendSuccessResponse(res, "success", conversationDetails);
+
     }
     // Create participants array
     const participantsArray = [
@@ -507,12 +515,31 @@ export const checkConversationExist = async (req: Request, res: Response) => {
 
     if (conversation) {
       const data = await getOtherParticipantData(conversation?._id, actualUserId, roleName)
-      sendSuccessResponse(res, 'Participant details fetched succesfully',
+      const participant=data?.participant
+      const campaign=data?.campaign
+      if(participant?.type==="Creator"){
+        const profileImage= s3GetURL(s3paths.userProfileImage +participant?.id)
+        data.participant.profileImageOriginal=profileImage
+      }
+      if(campaign?.logo_image_key){
+        data.campaign.campaignImageUrl=s3GetURL(campaign?.logo_image_key) 
+      }
+
+     return sendSuccessResponse(res, 'Participant details fetched succesfully',
         data,)
     }
     else {
       const newParticipant = await getNewParticipant(participant?.id)
-      sendSuccessResponse(res, 'Participant details fetched succesfully',
+      const participantData=newParticipant?.participant
+      const campaign=newParticipant?.campaign
+      if(participant?.type==="Creator"){
+        const profileImage= s3GetURL(s3paths.userProfileImage +participantData?.id)
+        newParticipant.participant.profileImageOriginal=profileImage
+      }
+      if(campaign?.logo_image_key){
+        newParticipant.campaign.campaignImageUrl=s3GetURL(campaign?.logo_image_key) 
+      }
+      return sendSuccessResponse(res, 'Participant details fetched succesfully',
         newParticipant,)
     }
 
