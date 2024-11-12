@@ -13,8 +13,8 @@ const bulkInsertProject = async (data: IProjects[]) => {
     return res
 }
 
-const ProjectsCount = async (type: string) => {
-    const res = await projects.countDocuments({ type });
+const ProjectsCount = async (type: string, userId: string) => {
+    const res = await projects.countDocuments({ type, user_id: userId });
     return res
 }
 
@@ -54,6 +54,11 @@ const getprojects = async ({ page, limit, type, user_id }: { page: number, limit
     const count = await projects.aggregate([
         {
             $match: { type }
+        },
+        {
+            $match: {
+                user_id: new mongoose.Types.ObjectId(user_id),
+            },
         },
         {
             $count: 'total',

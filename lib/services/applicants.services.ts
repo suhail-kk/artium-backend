@@ -1,5 +1,5 @@
 import Applicant from '@/lib/schemas/applicants'
-import { IApplicant, IUpdateApplicant } from '@/lib/types/applicants.interface'
+import { IApplicant, IUpdateApplicant, IUpdateApplicantTrack } from '@/lib/types/applicants.interface'
 import schemaNameConstants from '@/lib/constants/schemaConstants'
 import mongoose from 'mongoose'
 import { s3GetURL } from '../utils/s3utils'
@@ -12,6 +12,16 @@ const createApplicant = async (data: IApplicant) => {
 }
 
 const updateApplicant = async (id: string, data: IUpdateApplicant) => {
+    const res = await Applicant.updateOne(
+        {
+            _id: id,
+        },
+        data
+    )
+    return res
+}
+
+const updateApplicantTracks = async (id: string, data: IUpdateApplicantTrack) => {
     const res = await Applicant.updateOne(
         {
             _id: id,
@@ -121,4 +131,5 @@ export default {
     updateApplicant,
     getApplicants,
     deleteApplicant,
+    updateApplicantTracks
 }

@@ -142,7 +142,8 @@ const getCampaigns = async (search: string, page: number, limit: number) => {
 
     const matchStage: PipelineStage.Match = {
         $match: {
-            $or: [{ campaign_title: searchRegex }],
+            campaign_title: searchRegex,
+            campaign_status: { $ne: "Completed" },
         },
     };
 

@@ -50,13 +50,26 @@ const getCreators = async ({
 
     filter = {
         ...{ role: role?._id },
+        _id: { $ne: new mongoose.Types.ObjectId(userId) },
         ...(search && {
             $or: [
-                { firstName: new RegExp(search, 'i') },
-                { lastName: new RegExp(search, 'i') }
+                {
+                    $expr: {
+                        $regexMatch: {
+                            input: { $concat: ["$firstName", " ", "$lastName"] },
+                            regex: new RegExp(search, 'i')
+                        }
+                    }
+                },
+                {
+                    'interests.title': {
+                        $regex: search || "",
+                        $options: "i"
+                    }
+                }
             ]
         }),
-        ...(languages && { 'languages': { $in: [new mongoose.Types.ObjectId(languages)] } }),
+        ...(languages && { 'languages.title': { $in: [new RegExp(languages, 'i')] } }),
         ...(gender && { gender }),
         ...(country && { 'location.country': new RegExp(country, 'i') }),
         ...(minDOB && maxDOB && {
@@ -69,11 +82,6 @@ const getCreators = async ({
 
 
     const pipeline: any[] = [
-        {
-            $match: {
-                ...(filter),
-            },
-        },
         {
             $sort: { createdAt: -1 },
         },
@@ -91,6 +99,11 @@ const getCreators = async ({
                 localField: 'interests',
                 foreignField: '_id',
                 as: 'interests',
+            },
+        },
+        {
+            $match: {
+                ...(filter),
             },
         },
     ];

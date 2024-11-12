@@ -20,6 +20,12 @@ const applicantsSchema = new mongoose.Schema(
         status: {
             type: String,
         },
+        campaign_status: {
+            type: String,
+        },
+        campaign_end_date: {
+            type: String,
+        },
     },
     {
         timestamps: true,
