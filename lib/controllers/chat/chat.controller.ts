@@ -22,7 +22,8 @@ import {
 	getOtherParticipantData,
 	getNewParticipant,
 	updatedConversation,
-	approveConversation
+	approveConversation,
+	approveMessage
 } from '@/lib/services/chat.services';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { OFFER_STATUSES } from '@/lib/constants/constants';
@@ -30,7 +31,7 @@ import conversation, { conversationsAttributes, IParticipant, updatedConversatio
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import { createS3FileKey } from '@/lib/utils/fileHelper';
 import { ParticipantRequestData } from '@/lib/types/chat.interface';
-
+import applicantServices from '@/lib/services/applicants.services';
 
 export const createChat = async (req: Request, res: Response) => {
 	try {
@@ -52,7 +53,8 @@ export const createChat = async (req: Request, res: Response) => {
 		} = body;
 		const roleName: string = req?.user?.role?.name;
 		let actualUserId: string;
-
+		const application=await applicantServices.getApplicationById(applicationId)
+		if(!application) throw new Error("Invalid application Id")
 		let conversationExist;
 		if (roleName === 'Brand' && req?.user?.brandId) {
 			actualUserId = req.user.brandId.toString();
@@ -109,7 +111,7 @@ export const createChat = async (req: Request, res: Response) => {
 					participants: participantsArray,
 					name: null,
 					type: 'one-to-one',
-					campaignId: campaignId,
+					campaignId: application?.campaign_id,
 					applicationId:applicationId
 				};
 
@@ -576,9 +578,11 @@ export const checkConversationExist = async (req: Request, res: Response) => {
 
 export const approveVideo=async(req:Request,res:Response)=>{
 	try{
-	const {chatId } = req.body;
-	if(!chatId) throw new Error("Message not found")
-	await approveConversation(chatId)
+	const {messageId } = req.body;
+	const message:any = await findMessageById(messageId)
+	if(!message) throw new Error("Message not found")
+	await approveMessage(messageId)
+	await approveConversation(message?.chat_id)
 	return sendSuccessResponse(
 		res,
 		'Video approved succesfully',

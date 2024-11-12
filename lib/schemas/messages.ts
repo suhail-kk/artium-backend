@@ -35,6 +35,7 @@ export interface MessageAttributes {
   type?:string ;
   offer?:Offer;
   parentOfferId?:mongoose.Schema.Types.ObjectId;
+  approved?:boolean
 }
 
 const messageSchema = new Schema<MessageAttributes>(
@@ -70,6 +71,10 @@ const messageSchema = new Schema<MessageAttributes>(
       parentOfferId:{
         type: Schema.Types.ObjectId,
         ref:schemaNameConstants.messageSchema
+      },
+      approved:{
+        type:Boolean,
+        default:false
       }
   },
   {

@@ -124,12 +124,15 @@ const deleteApplicant = async (_id: string) => {
     const res = await Applicant.findByIdAndDelete(_id)
     return res
 }
-
+const getApplicationById=async(id:string)=>{
+    return await Applicant.findOne({_id:new mongoose.Types.ObjectId(id)})
+}
 export default {
     isExist,
     createApplicant,
     updateApplicant,
     getApplicants,
     deleteApplicant,
-    updateApplicantTracks
+    updateApplicantTracks,
+    getApplicationById
 }
