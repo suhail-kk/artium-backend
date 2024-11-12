@@ -21,7 +21,7 @@ const updateApplicant = async (id: string, data: IUpdateApplicant) => {
     return res
 }
 
-const updateApplicantTracks = async (id: string, data: IUpdateApplicantTrack) => {
+const updateApplicantTracks = async (id: string|mongoose.Types.ObjectId|undefined, data: IUpdateApplicantTrack) => {
     const res = await Applicant.updateOne(
         {
             _id: id,

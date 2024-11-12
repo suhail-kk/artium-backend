@@ -26,7 +26,7 @@ import {
 } from '@/lib/services/chat.services';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { OFFER_STATUSES } from '@/lib/constants/constants';
-import conversation, { IParticipant } from '@/lib/schemas/conversation';
+import conversation, { conversationsAttributes, IParticipant, updatedConversationAttributes } from '@/lib/schemas/conversation';
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import { createS3FileKey } from '@/lib/utils/fileHelper';
 import { ParticipantRequestData } from '@/lib/types/chat.interface';
@@ -413,7 +413,7 @@ export const updateChat = async (req: Request, res: Response) => {
 
 export const updateOfferStatus = async (req: Request, res: Response) => {
 	try {
-		const { messageId, status,applicationId } = req?.body;
+		const { messageId, status } = req?.body;
 		const messageDetails = await findMessageById(messageId);
 		if (!messageDetails) {
 			throw new BadRequestError('Message not found');
@@ -423,12 +423,14 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
 		}
 		await updateOffer(messageId, status);
 		if(status==="ACCEPTED"){
-			const message:any = findMessageById(messageId)
+			const message:any = await findMessageById(messageId)
+	
+			const conversation:conversationsAttributes= await findConversationById(message?.chat_id)
 			const duration =message?.Offer.delivery_duration
 			const endDate=new Date()
 			endDate.setDate(endDate.getDate() + duration);
 			await updatedConversation(message?._id,{offerAccepted:true})
-			await applicantsServices.updateApplicantTracks(applicationId,{campaign_end_date:endDate})
+			await applicantsServices.updateApplicantTracks(conversation?.applicationId,{campaign_end_date:endDate})
 		  }
 		sendSuccessResponse(res, 'Offer status updated succesefully');
 	} catch (error) {
