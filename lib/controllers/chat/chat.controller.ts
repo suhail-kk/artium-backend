@@ -1,5 +1,5 @@
 
-import {  Request, Response } from "express";
+import { Request, Response } from "express";
 import { S3_BUCKET } from "@/lib/config/s3.config";
 import s3 from "@/lib/config/s3.config";
 import pusherServer from "@/lib/config/pusher.config";
@@ -344,7 +344,11 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
       throw new BadRequestError("Invalid status option");
     }
     await updateOffer(messageId, status);
-    sendSuccessResponse(res,"Offer status updated succesefully");
+    if (status === "ACCEPTED") {
+      const date = new Date()
+      date.setDate(date.getDate() + 7);
+    }
+    sendSuccessResponse(res, "Offer status updated succesefully");
   } catch (error) {
     console.log("ERROR at chat controller::", error);
     throw new BadRequestError("Something went wrong");
@@ -369,18 +373,18 @@ export const getParticipant = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id;
     const chatId = req.query.chatId as string;
-     // check conversation exist 
+    // check conversation exist 
     const conversationDetails = await findConversationById(chatId);
     if (!conversationDetails) {
       throw new BadRequestError("Conversation not found");
     }
     //get participant
     const otherParticipant = await getParticipipantDetails(userId, chatId);
-    
-    sendSuccessResponse(res, 'Participant details fetched succesfully', 
-		otherParticipant,
-	
-		);
+
+    sendSuccessResponse(res, 'Participant details fetched succesfully',
+      otherParticipant,
+
+    );
   } catch (error) {
     console.log("ERROR at chat controller", error);
   }

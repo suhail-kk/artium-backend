@@ -20,7 +20,7 @@ export async function createProjects(req: Request, res: Response,
             return next(new BadRequestError("Files should be an array."));
         }
 
-        const count = await projectsServices.ProjectsCount(type)
+        const count = await projectsServices.ProjectsCount(type, user._id)
 
         if (type === 'featured' && count + files?.length > 4) {
             return next(new BadRequestError("Can't able to upload more than 3 projects"));
