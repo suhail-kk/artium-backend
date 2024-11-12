@@ -6,7 +6,7 @@ export interface IApplicant {
     user_id: Types.ObjectId
     campaign_id: Types.ObjectId,
     camapaign_status?: String,
-    campaign_end_date?: String
+    campaign_end_date?: Date
 }
 
 export interface IUpdateApplicant {
@@ -14,11 +14,11 @@ export interface IUpdateApplicant {
     status: string,
     campaign_id: Types.ObjectId,
     camapaign_status?: String,
-    campaign_end_date?: String
+    campaign_end_date?: Date
 }
 
 export interface IUpdateApplicantTrack {
-    campaign_id: Types.ObjectId,
+    campaign_id?: Types.ObjectId,
     camapaign_status?: String,
-    campaign_end_date?: String
+    campaign_end_date?: Date
 }

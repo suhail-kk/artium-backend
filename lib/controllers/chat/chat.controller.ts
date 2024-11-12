@@ -5,6 +5,7 @@ import pusherServer from '@/lib/config/pusher.config';
 import mongoose from 'mongoose';
 import { s3GetURL } from '@/lib/utils/s3utils';
 import s3paths from '@/lib/constants/s3paths';
+import applicantsServices from '@/lib/services/applicants.services';
 import {
 	findConversationById,
 	updateMessage,
@@ -20,6 +21,8 @@ import {
 	getParticipipantDetails,
 	getOtherParticipantData,
 	getNewParticipant,
+	updatedConversation,
+	approveConversation
 } from '@/lib/services/chat.services';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { OFFER_STATUSES } from '@/lib/constants/constants';
@@ -27,6 +30,7 @@ import conversation, { IParticipant } from '@/lib/schemas/conversation';
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import { createS3FileKey } from '@/lib/utils/fileHelper';
 import { ParticipantRequestData } from '@/lib/types/chat.interface';
+
 
 export const createChat = async (req: Request, res: Response) => {
 	try {
@@ -44,6 +48,7 @@ export const createChat = async (req: Request, res: Response) => {
 			participant,
 			offer,
 			campaignId,
+			applicationId
 		} = body;
 		const roleName: string = req?.user?.role?.name;
 		let actualUserId: string;
@@ -105,6 +110,7 @@ export const createChat = async (req: Request, res: Response) => {
 					name: null,
 					type: 'one-to-one',
 					campaignId: campaignId,
+					applicationId:applicationId
 				};
 
 				const createdParticipants = await createParticipants(data);
@@ -407,7 +413,7 @@ export const updateChat = async (req: Request, res: Response) => {
 
 export const updateOfferStatus = async (req: Request, res: Response) => {
 	try {
-		const { messageId, status } = req?.body;
+		const { messageId, status,applicationId } = req?.body;
 		const messageDetails = await findMessageById(messageId);
 		if (!messageDetails) {
 			throw new BadRequestError('Message not found');
@@ -416,10 +422,14 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
 			throw new BadRequestError('Invalid status option');
 		}
 		await updateOffer(messageId, status);
-		if (status === 'ACCEPTED') {
-			const date = new Date();
-			date.setDate(date.getDate() + 7);
-		}
+		if(status==="ACCEPTED"){
+			const message:any = findMessageById(messageId)
+			const duration =message?.Offer.delivery_duration
+			const endDate=new Date()
+			endDate.setDate(endDate.getDate() + duration);
+			await updatedConversation(message?._id,{offerAccepted:true})
+			await applicantsServices.updateApplicantTracks(applicationId,{campaign_end_date:endDate})
+		  }
 		sendSuccessResponse(res, 'Offer status updated succesefully');
 	} catch (error) {
 		console.log('ERROR at chat controller::', error);
@@ -561,3 +571,17 @@ export const checkConversationExist = async (req: Request, res: Response) => {
 		console.log(error);
 	}
 };
+
+export const approveVideo=async(req:Request,res:Response)=>{
+	try{
+	const {chatId } = req.body;
+	if(!chatId) throw new Error("Message not found")
+	await approveConversation(chatId)
+	return sendSuccessResponse(
+		res,
+		'Video approved succesfully',
+	);
+	}catch(error){
+		console.log(error);
+	}
+}

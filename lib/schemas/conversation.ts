@@ -17,9 +17,22 @@ export interface conversationsAttributes {
   latestMessageId?: mongoose.Types.ObjectId;
   latestMessageCreatedAt?: Date;
   campaignId:mongoose.Types.ObjectId;
+  approved?:boolean
+  offerAccepted?:boolean
+  applicationId?:mongoose.Types.ObjectId
 
 }
-
+export interface updatedConversationAttributes{
+  participants?: IParticipant[];
+  conversation_name?: string;
+  type?: string;
+  latestMessageId?: mongoose.Types.ObjectId;
+  latestMessageCreatedAt?: Date;
+  campaignId?:mongoose.Types.ObjectId;
+  approved?:boolean
+  offerAccepted?:boolean
+  applicationId?:mongoose.Types.ObjectId
+}
 const typeEnum = Object.freeze({
   ONE_TO_ONE: "one-to-one",
   GROUP: "group",
@@ -43,7 +56,16 @@ const conversationSchema = new Schema<conversationsAttributes>(
     },
     latestMessageId: { type: mongoose.Types.ObjectId, ref: "messages" },
     latestMessageCreatedAt: Date,
-    campaignId:{type:Schema.Types.ObjectId,ref:schemaNameConstants?.campaignsSchema}
+    campaignId:{type:Schema.Types.ObjectId,ref:schemaNameConstants?.campaignsSchema},
+    applicationId:{type:Schema.Types.ObjectId,ref:schemaNameConstants?.applicantsSchema},
+    approved:{
+      type:Boolean,
+      default:false
+    },
+    offerAccepted:{
+      type:Boolean,
+      default:false
+    }
   },
   {
     timestamps: true,

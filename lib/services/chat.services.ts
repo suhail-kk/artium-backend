@@ -1,5 +1,5 @@
 import Messages, { MessageAttributes } from "@/lib/schemas/messages";
-import ConversationModel, {conversationsAttributes
+import ConversationModel, {conversationsAttributes,updatedConversationAttributes
 } from "@/lib/schemas/conversation";
 import mongoose from "mongoose";
 import messages from "@/lib/schemas/messages";
@@ -855,4 +855,22 @@ export const getNewParticipant=async(userId:string)=>{
 
   const result = await user.aggregate(pipeline);
   return result.length > 0 ? result[0] : null;
+}
+
+export const updatedConversation=async(id:string,data:updatedConversationAttributes)=>{
+
+  await ConversationModel.updateOne({
+    _id:new mongoose.Types.ObjectId(id)
+  },{
+    $set:data
+  })
+}
+export const approveConversation=async(id:string)=>{
+  await ConversationModel.updateOne({
+    _id: new mongoose.Types.ObjectId(id)
+  },{
+    $set:{
+      approved:true
+    }
+  })
 }
