@@ -874,3 +874,8 @@ export const approveConversation=async(id:string)=>{
     }
   })
 }
+export const approveMessage=async(id:string)=>{
+  await messages.updateOne({_id:new mongoose.Types.ObjectId(id)},{
+    $set:{approved:true}
+  })
+}
