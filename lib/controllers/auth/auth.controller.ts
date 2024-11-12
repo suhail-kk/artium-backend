@@ -11,13 +11,8 @@ import brandService from '@/lib/services/brand.service';
 import { IUser, IBrand, IbrandObject } from '@/lib/types/user';
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import roleService from '@/lib/services/role.service';
-declare global {
-	namespace Express {
-		interface Request {
-			user: IUser; // Define the type for req.user
-		}
-	}
-}
+
+
 const prepareBrandData = async (
 	name: string,
 	email: string,

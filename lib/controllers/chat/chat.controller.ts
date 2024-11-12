@@ -4,7 +4,8 @@ import { S3_BUCKET } from "@/lib/config/s3.config";
 import s3 from "@/lib/config/s3.config";
 import pusherServer from "@/lib/config/pusher.config";
 import mongoose from "mongoose";
-
+import { s3GetURL } from '@/lib/utils/s3utils';
+import s3paths from '@/lib/constants/s3paths';
 import {
   findConversationById,
   updateMessage,
@@ -193,19 +194,42 @@ export const listConversations = async (req: Request, res: Response) => {
   try {
     const userId = req?.user?._id;
 
+
     const page: number = Number(req.query.page) || 1;
     const size: number = Number(req.query.size) || 15;
     const query = (req.query.query as string) || undefined;
+    const roleName: string = req?.user?.role?.name;
+    let actualUserId: string;
 
+
+    if (roleName === "Brand" && req?.user?.brandId) {
+      actualUserId = req.user.brandId.toString();
+    } else {
+      actualUserId = userId;
+    }
     let { conversations, totalPages } = await getRecentConversations(
       userId,
+      actualUserId,
       page,
       size,
-      query
+      query,
     );
 
+    const updatedConversation = conversations?.map((conversation: any) => {
+      if (conversation?.participants?.type === "Creator") {
+
+        const profileImage = s3GetURL(s3paths.userProfileImage + conversation?.participants?.id)
+        conversation.participants.profileImageOriginal = profileImage
+      }
+      if (conversation?.campaign?.logo_image_key) {
+        conversation.campaignImageUrl = s3GetURL(conversation?.campaign?.logo_image_key)
+      }
+      return conversation
+    })
+
+
     res.status(200).json({
-      data: conversations,
+      data: updatedConversation,
       meta: {
         page,
         size,
@@ -344,10 +368,6 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
       throw new BadRequestError("Invalid status option");
     }
     await updateOffer(messageId, status);
-    if (status === "ACCEPTED") {
-      const date = new Date()
-      date.setDate(date.getDate() + 7);
-    }
     sendSuccessResponse(res, "Offer status updated succesefully");
   } catch (error) {
     console.log("ERROR at chat controller::", error);
@@ -389,3 +409,77 @@ export const getParticipant = async (req: Request, res: Response) => {
     console.log("ERROR at chat controller", error);
   }
 };
+export const checkConversationExist = async (req: Request, res: Response) => {
+  try {
+
+    const id = req?.user?._id
+    const roleName: string = req?.user?.role?.name;
+    const userId = id
+    const actualUserId = roleName === "Brand" ? req.user.brandId : userId;
+
+    if (!actualUserId) {
+      throw new Error("User ID is undefined");
+    }
+    const { participant, chatId } = req.body
+
+    if (chatId) {
+      const conversationDetails = await findConversationById(chatId);
+      if (!conversationDetails) {
+        throw new BadRequestError("Conversation not found");
+      }
+      const data = await getOtherParticipantData(conversationDetails?._id, actualUserId, roleName)
+      const participant = data?.participant
+      const campaign = data?.campaign
+      if (participant?.type === "Creator") {
+        const profileImage = s3GetURL(s3paths.userProfileImage + participant?.id)
+        data.participant.profileImageOriginal = profileImage
+      }
+      if (campaign?.logo_image_key) {
+        data.campaign.campaignImageUrl = s3GetURL(campaign?.logo_image_key)
+      }
+      return sendSuccessResponse(res, 'Participant details fetched succesfully',
+        data,)
+
+    }
+    // Create participants array
+    const participantsArray = [
+      { id: actualUserId, type: roleName },
+      { id: new mongoose.Types.ObjectId(participant?.id), type: participant?.role }
+    ];
+    const conversation = await findConversationByParticipants(participantsArray)
+
+    if (conversation) {
+      const data = await getOtherParticipantData(conversation?._id, actualUserId, roleName)
+      const participant = data?.participant
+      const campaign = data?.campaign
+      if (participant?.type === "Creator") {
+        const profileImage = s3GetURL(s3paths.userProfileImage + participant?.id)
+        data.participant.profileImageOriginal = profileImage
+      }
+      if (campaign?.logo_image_key) {
+        data.campaign.campaignImageUrl = s3GetURL(campaign?.logo_image_key)
+      }
+
+      return sendSuccessResponse(res, 'Participant details fetched succesfully',
+        data,)
+    }
+    else {
+      const newParticipant = await getNewParticipant(participant?.id)
+      const participantData = newParticipant?.participant
+      const campaign = newParticipant?.campaign
+      if (participant?.type === "Creator") {
+        const profileImage = s3GetURL(s3paths.userProfileImage + participantData?.id)
+        newParticipant.participant.profileImageOriginal = profileImage
+      }
+      if (campaign?.logo_image_key) {
+        newParticipant.campaign.campaignImageUrl = s3GetURL(campaign?.logo_image_key)
+      }
+      return sendSuccessResponse(res, 'Participant details fetched succesfully',
+        newParticipant,)
+    }
+
+  } catch (error) {
+    console.log(error);
+
+  }
+}

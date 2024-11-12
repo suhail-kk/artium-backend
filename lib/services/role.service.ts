@@ -14,7 +14,7 @@ const bulkInsert = async (data: IbulkInsert[]) => {
     const res = await Role.insertMany(data)
     return res
 }
-const getRole = async (id: string) => {
+export const getRole = async (id: string) => {
     return await Role.findOne({ _id: id })
 }
 const getAllRoles = async () => {

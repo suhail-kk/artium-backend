@@ -3,11 +3,11 @@ const { Schema } = mongoose;
 import schemaNameConstants from '@/lib/constants/schemaConstants';
 import { userTypes } from "../types/user";
 export interface IParticipant {
-  id?: mongoose.Types.ObjectId;
+  id: mongoose.Types.ObjectId|string;
   type:{type:string,enum:userTypes},
-  unreadBy:boolean,
-  deletedBy:boolean
-  archivedBy:boolean
+  unreadBy?:boolean,
+  deletedBy?:boolean
+  archivedBy?:boolean
 
 }
 export interface conversationsAttributes {
@@ -42,6 +42,7 @@ const conversationSchema = new Schema<conversationsAttributes>(
       required:true
     },
     latestMessageId: { type: mongoose.Types.ObjectId, ref: "messages" },
+    latestMessageCreatedAt: Date,
     campaignId:{type:Schema.Types.ObjectId,ref:schemaNameConstants?.campaignsSchema}
   },
   {

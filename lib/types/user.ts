@@ -4,14 +4,14 @@ export enum gender {
 	female = 'female',
 	other = 'other',
 }
-export type interest = {
-	_id: string;
-	title?: string;
-};
-export type language = {
-	_id: string;
-	title?: string;
-};
+export type interest =
+	| { _id: string; title?: string }
+	| { _id?: string; title: string };
+
+export type language =
+	| { _id: string; title?: string }
+	| { _id?: string; title: string };
+
 type location = {
 	placeId?: string;
 	name?: string;
@@ -20,9 +20,9 @@ type city = {
 	placeId?: string;
 	name?: string;
 };
-export enum userTypes{
-	CREATOR='Creator',
-	BRAND='Brand'
+export enum userTypes {
+	CREATOR = 'Creator',
+	BRAND = 'Brand',
 }
 export interface IupdateUser {
 	firstName: string;
@@ -67,7 +67,15 @@ export interface IUser {
 	email: string;
 	firstName: string;
 	password: string;
-	role: string;
+	role: {
+		_id: mongoose.Schema.Types.ObjectId;
+		name: string;
+		type: string;
+		description: string;
+		__v: 0;
+		createdAt: Date;
+		updatedAt: Date;
+	};
 	brandId?: mongoose.Schema.Types.ObjectId;
 	location: string;
 	leadDescription: string;
