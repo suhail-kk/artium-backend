@@ -427,8 +427,8 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
 			const duration =message?.Offer.delivery_duration
 			const endDate=new Date()
 			endDate.setDate(endDate.getDate() + duration);
-			updatedConversation(message?._id,{offerAccepted:true})
-			applicantsServices.updateApplicantTracks(applicationId,{campaign_end_date:endDate})
+			await updatedConversation(message?._id,{offerAccepted:true})
+			await applicantsServices.updateApplicantTracks(applicationId,{campaign_end_date:endDate})
 		  }
 		sendSuccessResponse(res, 'Offer status updated succesefully');
 	} catch (error) {
