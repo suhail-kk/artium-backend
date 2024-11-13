@@ -579,9 +579,11 @@ export const approveVideo=async(req:Request,res:Response)=>{
 	try{
 	const {messageId } = req.body;
 	const message:any = await findMessageById(messageId)
-	if(!message) throw new Error("Message not found")
+
+	if(!message) throw new BadRequestError("Message not found")
 	await approveMessage(messageId)
-	await approveConversation(message?.chat_id)
+	await approveConversation(message?.chat_id,message?.id)
+	
 	return sendSuccessResponse(
 		res,
 		'Video approved succesfully',
