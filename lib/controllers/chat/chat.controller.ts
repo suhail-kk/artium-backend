@@ -64,9 +64,9 @@ export const createChat = async (req: Request, res: Response) => {
 		if (!chat_id && !participant) {
 			return res.status(400).json('Please include the reciever');
 		}
-		// if (participant && !campaignId) {
-		// 	return res.status(400).json('Invalid campaignId');
-		// }
+		if (participant && !applicationId) {
+			return res.status(400).json('Invalid applicationId');
+		}
 
 		const participantsArray = [
 			{ id: new mongoose.Types.ObjectId(actualUserId), type: roleName },
