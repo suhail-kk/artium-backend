@@ -23,11 +23,15 @@ import {
 	getNewParticipant,
 	updatedConversation,
 	approveConversation,
-	approveMessage
+	approveMessage,
 } from '@/lib/services/chat.services';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { OFFER_STATUSES } from '@/lib/constants/constants';
-import conversation, { conversationsAttributes, IParticipant, updatedConversationAttributes } from '@/lib/schemas/conversation';
+import conversation, {
+	conversationsAttributes,
+	IParticipant,
+	updatedConversationAttributes,
+} from '@/lib/schemas/conversation';
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import { createS3FileKey } from '@/lib/utils/fileHelper';
 import { ParticipantRequestData } from '@/lib/types/chat.interface';
@@ -48,12 +52,16 @@ export const createChat = async (req: Request, res: Response) => {
 			chat_id,
 			participant,
 			offer,
-			applicationId
+			applicationId,
 		} = body;
+
 		const roleName: string = req?.user?.role?.name;
 		let actualUserId: string;
-		const application=await applicantServices.getApplicationById(applicationId)
-		if(!application) throw new Error("Invalid application Id")
+		let application: any;
+		if (applicationId) {
+			application = await applicantServices.getApplicationById(applicationId);
+			if (!application) throw new Error('Invalid application Id');
+		}
 		let conversationExist;
 		if (roleName === 'Brand' && req?.user?.brandId) {
 			actualUserId = req.user.brandId.toString();
@@ -111,7 +119,7 @@ export const createChat = async (req: Request, res: Response) => {
 					name: null,
 					type: 'one-to-one',
 					campaignId: application?.campaign_id,
-					applicationId:applicationId
+					applicationId: applicationId,
 				};
 
 				const createdParticipants = await createParticipants(data);
@@ -423,16 +431,21 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
 			throw new BadRequestError('Invalid status option');
 		}
 		await updateOffer(messageId, status);
-		if(status==="ACCEPTED"){
-			const message:any = await findMessageById(messageId)
-	
-			const conversation:conversationsAttributes= await findConversationById(message?.chat_id)
-			const duration =message?.Offer.delivery_duration
-			const endDate=new Date()
+		if (status === 'ACCEPTED') {
+			const message: any = await findMessageById(messageId);
+
+			const conversation: conversationsAttributes = await findConversationById(
+				message?.chat_id
+			);
+			const duration = message?.Offer.delivery_duration;
+			const endDate = new Date();
 			endDate.setDate(endDate.getDate() + duration);
-			await updatedConversation(message?._id,{offerAccepted:true})
-			await applicantsServices.updateApplicantTracks(conversation?.applicationId,{campaign_end_date:endDate})
-		  }
+			await updatedConversation(message?._id, { offerAccepted: true });
+			await applicantsServices.updateApplicantTracks(
+				conversation?.applicationId,
+				{ campaign_end_date: endDate }
+			);
+		}
 		sendSuccessResponse(res, 'Offer status updated succesefully');
 	} catch (error) {
 		console.log('ERROR at chat controller::', error);
@@ -575,20 +588,17 @@ export const checkConversationExist = async (req: Request, res: Response) => {
 	}
 };
 
-export const approveVideo=async(req:Request,res:Response)=>{
-	try{
-	const {messageId } = req.body;
-	const message:any = await findMessageById(messageId)
+export const approveVideo = async (req: Request, res: Response) => {
+	try {
+		const { messageId } = req.body;
+		const message: any = await findMessageById(messageId);
 
-	if(!message) throw new BadRequestError("Message not found")
-	await approveMessage(messageId)
-	await approveConversation(message?.chat_id,message?.id)
-	
-	return sendSuccessResponse(
-		res,
-		'Video approved succesfully',
-	);
-	}catch(error){
+		if (!message) throw new BadRequestError('Message not found');
+		await approveMessage(messageId);
+		await approveConversation(message?.chat_id, message?.id);
+
+		return sendSuccessResponse(res, 'Video approved succesfully');
+	} catch (error) {
 		console.log(error);
 	}
-}
+};
