@@ -804,7 +804,8 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
               participants: "$participantsData",
               campaign: "$campaign",
               _id: 1,
-              chat_id:'$_id'
+              chat_id:'$_id',
+              approvedMessageId:'$approvedMessageId'
             },
           },
           {
@@ -813,6 +814,7 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
               participant: { $first: "$participants" }, 
               campaign: { $first: "$campaign" } ,
               chat_id: { $first: "$chat_id" },
+              approvedMessageId: { $first: "$approvedMessageId" },
             }
           },
           {
@@ -820,7 +822,8 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
               _id: 1,
               participant: 1,
               campaign: 1,
-              chat_id:1
+              chat_id:1,
+              approvedMessageId:1
             }
           }
     ]
@@ -865,14 +868,18 @@ export const updatedConversation=async(id:string,data:updatedConversationAttribu
     $set:data
   })
 }
-export const approveConversation=async(id:string)=>{
-  await ConversationModel.updateOne({
-    _id: new mongoose.Types.ObjectId(id)
+export const approveConversation=async(chatId:string,messageId:string)=>{
+  
+ const result= await ConversationModel.updateOne({
+    _id: new mongoose.Types.ObjectId(chatId)
   },{
     $set:{
-      approved:true
+      approved:true,
+      approvedMessageId:messageId
     }
   })
+  
+  return result
 }
 export const approveMessage=async(id:string)=>{
   await messages.updateOne({_id:new mongoose.Types.ObjectId(id)},{
