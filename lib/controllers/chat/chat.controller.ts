@@ -118,8 +118,8 @@ export const createChat = async (req: Request, res: Response) => {
 					participants: participantsArray,
 					name: null,
 					type: 'one-to-one',
-					campaignId: application?.campaign_id,
-					applicationId: applicationId,
+					campaignId: application?.campaign_id||null,
+					applicationId: applicationId||null,
 				};
 
 				const createdParticipants = await createParticipants(data);
