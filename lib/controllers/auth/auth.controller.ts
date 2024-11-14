@@ -15,7 +15,8 @@ import mongoose from 'mongoose';
 
 
 const prepareBrandData = async (
-	name: string,
+	firstName: string,
+	lastName:string,
 	email: string,
 	password: string,
 	brand: IbrandObject,
@@ -34,7 +35,8 @@ const prepareBrandData = async (
 
 		const Data: ICreateUser = {
 			email: email,
-			firstName: name,
+			firstName: firstName,
+			lastName:lastName,
 			password: hashedPassword,
 			role: role_id,
 			brandId: brandData?._id,
@@ -50,7 +52,8 @@ const prepareBrandData = async (
 };
 const prepareCreatorData = async (
 	email: string,
-	name: string,
+	firstName: string,
+	lastName:string,
 	password: string,
 	location: string,
 	lead_description: string,
@@ -60,7 +63,8 @@ const prepareCreatorData = async (
 		const hashedPassword = await generateHashPassword(password);
 		const userData = {
 			email: email,
-			firstName: name,
+			firstName: firstName,
+			lastName:lastName,
 			password: hashedPassword,
 			role: role_id,
 			location: location,
@@ -74,6 +78,13 @@ const prepareCreatorData = async (
 		throw new Error('Failed to prepare brand data.');
 	}
 };
+const parseName=(name:string)=>{
+	const parsedName=name.trim().split(" ")
+	return{
+		firstName:parsedName[0],
+		lastName:parsedName?.length>1?parsedName.slice(1).join(""):""
+	}
+}
 export const registerUser = async (
 	req: Request,
 	res: Response,
@@ -81,7 +92,7 @@ export const registerUser = async (
 ) => {
 	try {
 		const {
-			firstName,
+			name,
 			email,
 			password,
 			role_name,
@@ -93,7 +104,7 @@ export const registerUser = async (
 		if (!userRole) {
 			throw new BadRequestError('Invalid user role');
 		}
-
+		const {firstName,lastName}=parseName(name)
 		const userwithEmail = await userServices.checkUser({
 			email: email,
 			deletedAt: null,
@@ -120,6 +131,7 @@ export const registerUser = async (
 			userData = await prepareCreatorData(
 				email,
 				firstName,
+				lastName,
 				password,
 				location,
 				lead_description,
@@ -143,6 +155,7 @@ export const registerUser = async (
 				}
 				userData = await prepareBrandData(
 					firstName,
+					lastName,
 					email,
 					password,
 					brand,
