@@ -7,7 +7,7 @@ const bulkInsert = async (data: ICreatorCount[]) => {
 }
 
 const getAll = async () => {
-    const res = await creatorsCount.find()
+    const res = await creatorsCount.find({}).sort({ rank: 1 });
     return res
 }
 

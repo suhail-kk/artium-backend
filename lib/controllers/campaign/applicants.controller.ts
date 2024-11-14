@@ -88,6 +88,37 @@ export async function updateApplicant(req: any, res: any) {
     }
 }
 
+export async function updateApplicantsTrack(req: any, res: any) {
+    try {
+        const body = await req.body
+
+        const {
+            campaign_id,
+            application_id,
+            campaign_status,
+            campaign_end_date,
+        } = body
+
+        const payload = {
+            campaign_id,
+            application_id,
+            campaign_status,
+            campaign_end_date,
+        }
+
+        const response = await applicantsServices.updateApplicantTracks(application_id, payload)
+
+
+        return sendSuccessResponse(res, "Applicant updated successfully", {
+            data: response
+        });
+
+    } catch (error) {
+        return new BadRequestError('Failed to update campaign details');
+    }
+}
+
+
 export async function deleteApplicant(req: Request, res: Response) {
     try {
         const id = req.query.id as string
