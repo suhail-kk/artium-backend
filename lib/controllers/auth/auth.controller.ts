@@ -11,6 +11,7 @@ import brandService from '@/lib/services/brand.service';
 import { IUser, IBrand, IbrandObject } from '@/lib/types/user';
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import roleService from '@/lib/services/role.service';
+import mongoose from 'mongoose';
 
 
 const prepareBrandData = async (
@@ -88,12 +89,18 @@ export const registerUser = async (
 			location,
 			lead_description,
 		} = req.body;
+		const userRole: IUser = await roleService.FindRoleDetailsByName(role_name);
+		if (!userRole) {
+			throw new BadRequestError('Invalid user role');
+		}
 
-		//check if user already exist
 		const userwithEmail = await userServices.checkUser({
 			email: email,
 			deletedAt: null,
+			role:new mongoose.Types.ObjectId(userRole._id)
 		});
+
+		
 		if (userwithEmail) {
 			return res.status(400).json({
 				isError: true,
@@ -106,11 +113,6 @@ export const registerUser = async (
 			});
 		}
 
-		//fetch user role data
-		const userRole: IUser = await roleService.FindRoleDetailsByName(role_name);
-		if (!userRole) {
-			throw new BadRequestError('Invalid user role');
-		}
 
 		// prepare user data as per role
 		let userData: ICreateUser | undefined;
@@ -178,10 +180,16 @@ export const login = async (
 	next: NextFunction
 ) => {
 	try {
-		const { email, password } = req.body;
-
-		const user = await userServices.getUserByEmail(email);
-
+		const { email, password ,role_name} = req.body;
+		const userRole: IUser = await roleService.FindRoleDetailsByName(role_name);
+		if (!userRole) {
+			throw new BadRequestError('Invalid user role');
+		}
+		const user = await userServices.checkUser({
+			email: email,
+			deletedAt: null,
+			role:new mongoose.Types.ObjectId(userRole._id)
+		});
 		if (!user)
 			return res.status(400).json({
 				isError: true,
@@ -291,6 +299,7 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { _id } = req?.user;
 		const user: any = await getUserMe(_id);
+		
 		if (!user) throw new BadRequestError("User doesn't exists");
 		sendSuccessResponse(res, 'Success', user[0]);
 	} catch (error) {
