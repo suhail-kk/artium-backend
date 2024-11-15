@@ -85,6 +85,7 @@ export interface IUser {
 export interface ICreateUser {
 	email: string;
 	firstName: string;
+	lastName:string;
 	password: string;
 	role: string;
 	brandId?: mongoose.Schema.Types.ObjectId;

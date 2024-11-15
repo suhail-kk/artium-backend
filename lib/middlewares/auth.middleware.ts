@@ -30,7 +30,7 @@ export const authenticateTokenMiddleware = async (
       throw new NotAuthorizedError()
 
     // check user exist on the database
-    const user: any = await userServices.getUserByEmail(decodeToken['email'])
+    const user: any = await userServices.getUserById(decodeToken['id'])
     if (!user) throw new NotAuthorizedError()
     req.user = {
       ...user,

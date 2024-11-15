@@ -11,10 +11,12 @@ import brandService from '@/lib/services/brand.service';
 import { IUser, IBrand, IbrandObject } from '@/lib/types/user';
 import { BadRequestError } from '@/lib/utils/errors/errors';
 import roleService from '@/lib/services/role.service';
+import mongoose from 'mongoose';
 
 
 const prepareBrandData = async (
-	name: string,
+	firstName: string,
+	lastName:string,
 	email: string,
 	password: string,
 	brand: IbrandObject,
@@ -33,7 +35,8 @@ const prepareBrandData = async (
 
 		const Data: ICreateUser = {
 			email: email,
-			firstName: name,
+			firstName: firstName,
+			lastName:lastName,
 			password: hashedPassword,
 			role: role_id,
 			brandId: brandData?._id,
@@ -49,7 +52,8 @@ const prepareBrandData = async (
 };
 const prepareCreatorData = async (
 	email: string,
-	name: string,
+	firstName: string,
+	lastName:string,
 	password: string,
 	location: string,
 	lead_description: string,
@@ -59,7 +63,8 @@ const prepareCreatorData = async (
 		const hashedPassword = await generateHashPassword(password);
 		const userData = {
 			email: email,
-			firstName: name,
+			firstName: firstName,
+			lastName:lastName,
 			password: hashedPassword,
 			role: role_id,
 			location: location,
@@ -73,6 +78,13 @@ const prepareCreatorData = async (
 		throw new Error('Failed to prepare brand data.');
 	}
 };
+const parseName=(name:string)=>{
+	const parsedName=name.trim().split(" ")
+	return{
+		firstName:parsedName[0],
+		lastName:parsedName?.length>1?parsedName.slice(1).join(""):""
+	}
+}
 export const registerUser = async (
 	req: Request,
 	res: Response,
@@ -80,7 +92,7 @@ export const registerUser = async (
 ) => {
 	try {
 		const {
-			firstName,
+			name,
 			email,
 			password,
 			role_name,
@@ -88,12 +100,18 @@ export const registerUser = async (
 			location,
 			lead_description,
 		} = req.body;
-
-		//check if user already exist
+		const userRole: IUser = await roleService.FindRoleDetailsByName(role_name);
+		if (!userRole) {
+			throw new BadRequestError('Invalid user role');
+		}
+		const {firstName,lastName}=parseName(name)
 		const userwithEmail = await userServices.checkUser({
 			email: email,
 			deletedAt: null,
+			role:new mongoose.Types.ObjectId(userRole._id)
 		});
+
+		
 		if (userwithEmail) {
 			return res.status(400).json({
 				isError: true,
@@ -106,11 +124,6 @@ export const registerUser = async (
 			});
 		}
 
-		//fetch user role data
-		const userRole: IUser = await roleService.FindRoleDetailsByName(role_name);
-		if (!userRole) {
-			throw new BadRequestError('Invalid user role');
-		}
 
 		// prepare user data as per role
 		let userData: ICreateUser | undefined;
@@ -118,6 +131,7 @@ export const registerUser = async (
 			userData = await prepareCreatorData(
 				email,
 				firstName,
+				lastName,
 				password,
 				location,
 				lead_description,
@@ -141,6 +155,7 @@ export const registerUser = async (
 				}
 				userData = await prepareBrandData(
 					firstName,
+					lastName,
 					email,
 					password,
 					brand,
@@ -178,10 +193,16 @@ export const login = async (
 	next: NextFunction
 ) => {
 	try {
-		const { email, password } = req.body;
-
-		const user = await userServices.getUserByEmail(email);
-
+		const { email, password ,role_name} = req.body;
+		const userRole: IUser = await roleService.FindRoleDetailsByName(role_name);
+		if (!userRole) {
+			throw new BadRequestError('Invalid user role');
+		}
+		const user = await userServices.checkUser({
+			email: email,
+			deletedAt: null,
+			role:new mongoose.Types.ObjectId(userRole._id)
+		});
 		if (!user)
 			return res.status(400).json({
 				isError: true,
@@ -291,6 +312,7 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { _id } = req?.user;
 		const user: any = await getUserMe(_id);
+		
 		if (!user) throw new BadRequestError("User doesn't exists");
 		sendSuccessResponse(res, 'Success', user[0]);
 	} catch (error) {

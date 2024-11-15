@@ -7,6 +7,7 @@ interface checkUser {
 	email?: string;
 	_id?: mongoose.Types.ObjectId;
 	deletedAt?: null | Date;
+	role:mongoose.Types.ObjectId;
 }
 interface IcreateUser {
 	email: string;
