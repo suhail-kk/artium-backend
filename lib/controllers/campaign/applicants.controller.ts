@@ -93,16 +93,12 @@ export async function updateApplicantsTrack(req: any, res: any) {
         const body = await req.body
 
         const {
-            campaign_id,
             application_id,
-            campaign_status,
             campaign_end_date,
         } = body
 
         const payload = {
-            campaign_id,
             application_id,
-            campaign_status,
             campaign_end_date,
         }
 

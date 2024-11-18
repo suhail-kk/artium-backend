@@ -429,7 +429,6 @@ const getUserCampaigns = async (user_id: string, search: string, page: number, l
 
 const getAppliedCampaigns = async (user_id: string, search: string, page: number, limit: number) => {
     try {
-        console.log(user_id)
         // const searchRegex = new RegExp(search, 'i')
         const pipeline = [
             {

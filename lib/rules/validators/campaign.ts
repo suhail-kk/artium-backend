@@ -29,21 +29,20 @@ export const createCampaignValidator = () => {
             .withMessage('Video duration must be a number')
             .isInt({ max: 1000 })
             .withMessage('Video duration must not exceed 1000'),
-        body('min_price')
-            .optional({ checkFalsy: true })
-            .isNumeric()
-            .withMessage('Minium price must be a number')
-            .isInt({ max: 10000000 })
-            .withMessage('Minium price must not exceed 1,00,000,00'),
         body('max_price')
             .optional({ checkFalsy: true })
             .isNumeric()
-            .withMessage('Maxium price must be a number')
+            .withMessage('Maximum price must be a number')
             .isInt({ max: 10000000 })
-            .withMessage('Maxium price must not exceed 1,00,000,00'),
+            .withMessage('Maximum price must not exceed 10,000,000'),
+
         body('min_price')
+            .optional({ checkFalsy: true })
+            .isNumeric()
+            .withMessage('Minimum price must be a number')
             .custom((value, { req }) => {
-                if (value > req.body.max_price) {
+                const maxPrice = req.body.max_price;
+                if (maxPrice && Number(value) > Number(maxPrice)) {
                     throw new Error('Minimum price cannot be greater than maximum price');
                 }
                 return true;
@@ -55,7 +54,7 @@ export const createCampaignValidator = () => {
                 if (link === "") {
                     return true;
                 }
-                const isValidUrl = /^(https?:\/\/[^\s/$.?#].[^\s]*)$/i.test(link);
+                const isValidUrl = /^(https?:\/\/|www\.)[^\s/$.?#].[^\s]*$/i.test(link);
                 if (!isValidUrl) {
                     throw new Error('Each reference link must be a valid URL');
                 }

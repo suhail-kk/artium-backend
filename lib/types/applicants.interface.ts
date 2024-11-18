@@ -18,7 +18,6 @@ export interface IUpdateApplicant {
 }
 
 export interface IUpdateApplicantTrack {
-    campaign_id: Types.ObjectId,
-    camapaign_status?: String,
+    application_id: Types.ObjectId,
     campaign_end_date?: String
 }

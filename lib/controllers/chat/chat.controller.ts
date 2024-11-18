@@ -19,6 +19,8 @@ import {
   updateOffer,
   markAllMessagesRead,
   getParticipipantDetails,
+  getNewParticipant,
+  getOtherParticipantData,
 } from "@/lib/services/chat.services";
 import { sendSuccessResponse } from "@/lib/utils/responses/success.handler";
 import { OFFER_STATUSES } from "@/lib/constants/constants";
