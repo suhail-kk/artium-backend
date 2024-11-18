@@ -886,34 +886,85 @@ export const approveMessage=async(id:string)=>{
     $set:{approved:true}
   })
 }
-export const getTotalUnreadMessagesCount=async(userId:string,chatId:string)=>{
-  
-  const pipeline=[
-    {
-      $match:{
-        $and:[
-          {
-            chat_id:new mongoose.Types.ObjectId(chatId)
-          },
-          {
-         seen:false
-          },
-          {
-           sender_id:{$ne:userId} 
-          }
-        ]
-      }
-    },
-    {
-      $count:'unreadCount'
-    },
-    {
-      $project:{
-        count:'$unreadCount'
-      }
-    }
+export const getTotalUnreadMessagesCount=async(userId:string)=>{
 
+  const pipeline=
+  [
+   {
+    $lookup:{
+      from: "conversations", 
+      localField: "chat_id",
+      foreignField: "_id",
+      as: "conversationDetails",
+
+    }
+   },
+   {
+    $unwind:{path:'$conversationDetails',
+      preserveNullAndEmptyArrays:true
+
+    }
+   },
+   {
+    $match:{
+      'conversationDetails.participants':{$elemMatch:{
+        id:userId
+      }},
+      seen:false,
+      sender_id:{$ne:userId}
+    }
+   },
+   {$group:{
+    _id:'$chat_id',
+    unreadCount:{$sum:1}
+   }},
+   {$group:{
+    _id:null,
+    totalCount:{$sum:'$unreadCount'}
+   }},
+   {
+    $project:{
+      _id:0,
+      totalCount:1
+    }
+   }
   ]
   const result = await messages.aggregate(pipeline)
-  return result[0]?.count
+  return result[0]?.totalCount
 }
+export const findConnectedUserIds=async(userId:string)=>{
+
+
+const pipeline=
+    [
+      {
+        $match: {
+          'participants.id': userId
+        }
+      },
+      { $unwind: { path: '$participants',preserveNullAndEmptyArrays: true, } },
+      {
+        $match: {
+          'participants.id': {
+            $ne: userId
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          userIds: { $addToSet: '$participants.id' }
+        }
+      },
+      {
+        $project:{
+          _id:0,
+          userIds:1
+        }
+      }
+    ]
+const result = await ConversationModel.aggregate(pipeline)
+
+return result[0]?.userIds
+}
+

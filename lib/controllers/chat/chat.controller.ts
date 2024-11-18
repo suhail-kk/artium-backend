@@ -24,7 +24,8 @@ import {
 	updatedConversation,
 	approveConversation,
 	approveMessage,
-	getTotalUnreadMessagesCount
+	getTotalUnreadMessagesCount,
+	findConnectedUserIds
 } from '@/lib/services/chat.services';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { OFFER_STATUSES } from '@/lib/constants/constants';
@@ -119,8 +120,8 @@ export const createChat = async (req: Request, res: Response) => {
 					participants: participantsArray,
 					name: null,
 					type: 'one-to-one',
-					campaignId: application?.campaign_id||null,
-					applicationId: applicationId||null,
+					campaignId: application?.campaign_id || null,
+					applicationId: applicationId || null,
 				};
 
 				const createdParticipants = await createParticipants(data);
@@ -603,18 +604,36 @@ export const approveVideo = async (req: Request, res: Response) => {
 		console.log(error);
 	}
 };
-export const getUnreadCount=async(req:Request,res:Response,next:NextFunction)=>{
-	try{
-		
-		const user=req.user
-		 const chatId =req.query?.chatId as string 
-		 if(!chatId){
-			throw new BadRequestError("ChatId is required")
-		 }
-		const count= await getTotalUnreadMessagesCount(user?._id,chatId)
-		sendSuccessResponse(res,'Total unread messages count fetched succesfully',{count:count})
-	}catch(error){
+export const getUnreadCount = async (req: Request, res: Response, next: NextFunction) => {
+	try {
 
-next(error)
+		const user = req.user
+		const count = await getTotalUnreadMessagesCount(user?._id)
+		sendSuccessResponse(res, 'Total unread messages count fetched succesfully', { count: count })
+	} catch (error) {
+
+		next(error)
 	}
+}
+
+export const authenticatPusher = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+
+		const socketId = req.body.socketId;
+		const userId = req.user?._id
+		if(socketId){
+			throw new BadRequestError("SocketId is required")
+		}
+		const connection_ids = await findConnectedUserIds(userId)
+
+		const user = {
+			id: userId,
+			watchlist: connection_ids
+		};
+		const authResponse = pusherServer.authenticateUser(socketId, user);
+		sendSuccessResponse(res, "Auth Success", authResponse)
+	} catch (error) {
+		next(error)
+	}
+
 }
