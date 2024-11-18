@@ -886,3 +886,34 @@ export const approveMessage=async(id:string)=>{
     $set:{approved:true}
   })
 }
+export const getTotalUnreadMessagesCount=async(userId:string,chatId:string)=>{
+  
+  const pipeline=[
+    {
+      $match:{
+        $and:[
+          {
+            chat_id:new mongoose.Types.ObjectId(chatId)
+          },
+          {
+         seen:false
+          },
+          {
+           sender_id:{$ne:userId} 
+          }
+        ]
+      }
+    },
+    {
+      $count:'unreadCount'
+    },
+    {
+      $project:{
+        count:'$unreadCount'
+      }
+    }
+
+  ]
+  const result = await messages.aggregate(pipeline)
+  return result[0]?.count
+}

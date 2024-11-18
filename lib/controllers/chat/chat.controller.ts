@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { S3_BUCKET } from '@/lib/config/s3.config';
 import s3 from '@/lib/config/s3.config';
 import pusherServer from '@/lib/config/pusher.config';
@@ -24,6 +24,7 @@ import {
 	updatedConversation,
 	approveConversation,
 	approveMessage,
+	getTotalUnreadMessagesCount
 } from '@/lib/services/chat.services';
 import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 import { OFFER_STATUSES } from '@/lib/constants/constants';
@@ -602,3 +603,18 @@ export const approveVideo = async (req: Request, res: Response) => {
 		console.log(error);
 	}
 };
+export const getUnreadCount=async(req:Request,res:Response,next:NextFunction)=>{
+	try{
+		
+		const user=req.user
+		 const chatId =req.query?.chatId as string 
+		 if(!chatId){
+			throw new BadRequestError("ChatId is required")
+		 }
+		const count= await getTotalUnreadMessagesCount(user?._id,chatId)
+		sendSuccessResponse(res,'Total unread messages count fetched succesfully',{count:count})
+	}catch(error){
+
+next(error)
+	}
+}
