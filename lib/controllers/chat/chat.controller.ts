@@ -440,7 +440,7 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
 				message?.chat_id
 			);
 
-			const duration = message?.Offer?.delivery_duration;
+			const duration = message?.offer?.delivery_duration;
 			const endDate = new Date();
 			endDate.setDate(endDate.getDate() + duration);
 			await updatedConversation(message?._id, { offerAccepted: true });

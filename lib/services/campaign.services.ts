@@ -526,7 +526,28 @@ const getAppliedCampaigns = async (user_id: string, search: string, page: number
                 $addFields: {
                     applicants_count: { $size: '$applicants' }
                 },
-            }
+            },
+            {
+                $addFields: {
+                    applicant_for_user: {
+                        $arrayElemAt: [
+                            {
+                                $filter: {
+                                    input: "$applicants",
+                                    as: "applicant",
+                                    cond: { $eq: ["$$applicant.user_id", new mongoose.Types.ObjectId(user_id)] },
+                                },
+                            },
+                            0,
+                        ],
+                    },
+                },
+            },
+            {
+                $addFields: {
+                    campaign_end_date: "$applicant_for_user.campaign_end_date",
+                },
+            },
         ]
 
         const campaigns = await Campaign.aggregate([
