@@ -107,7 +107,7 @@ export const getUserById = async (id: string) => {
 	const user = await User.findById({
 		_id: new mongoose.Types.ObjectId(id),
 	}).populate('role');
-	return user;
+	return user ? user?.toJSON() : null;
 };
 export default {
 	createUser,
@@ -116,4 +116,5 @@ export default {
 	getRole,
 	getUserByEmail,
 	getUser,
+	getUserById
 };

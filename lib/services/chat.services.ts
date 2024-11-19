@@ -1,5 +1,5 @@
 import Messages, { MessageAttributes } from "@/lib/schemas/messages";
-import ConversationModel, {conversationsAttributes
+import ConversationModel, {conversationsAttributes,updatedConversationAttributes
 } from "@/lib/schemas/conversation";
 import mongoose from "mongoose";
 import messages from "@/lib/schemas/messages";
@@ -804,7 +804,8 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
               participants: "$participantsData",
               campaign: "$campaign",
               _id: 1,
-              chat_id:'$_id'
+              chat_id:'$_id',
+              approvedMessageId:'$approvedMessageId'
             },
           },
           {
@@ -813,6 +814,7 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
               participant: { $first: "$participants" }, 
               campaign: { $first: "$campaign" } ,
               chat_id: { $first: "$chat_id" },
+              approvedMessageId: { $first: "$approvedMessageId" },
             }
           },
           {
@@ -820,7 +822,8 @@ export const markAllMessagesRead = async (chatId:string,userId:string) => {
               _id: 1,
               participant: 1,
               campaign: 1,
-              chat_id:1
+              chat_id:1,
+              approvedMessageId:1
             }
           }
     ]
@@ -856,3 +859,112 @@ export const getNewParticipant=async(userId:string)=>{
   const result = await user.aggregate(pipeline);
   return result.length > 0 ? result[0] : null;
 }
+
+export const updatedConversation=async(id:string,data:updatedConversationAttributes)=>{
+
+  await ConversationModel.updateOne({
+    _id:new mongoose.Types.ObjectId(id)
+  },{
+    $set:data
+  })
+}
+export const approveConversation=async(chatId:string,messageId:string)=>{
+  
+ const result= await ConversationModel.updateOne({
+    _id: new mongoose.Types.ObjectId(chatId)
+  },{
+    $set:{
+      approved:true,
+      approvedMessageId:messageId
+    }
+  })
+  
+  return result
+}
+export const approveMessage=async(id:string)=>{
+  await messages.updateOne({_id:new mongoose.Types.ObjectId(id)},{
+    $set:{approved:true}
+  })
+}
+export const getTotalUnreadMessagesCount=async(userId:string)=>{
+
+  const pipeline=
+  [
+   {
+    $lookup:{
+      from: "conversations", 
+      localField: "chat_id",
+      foreignField: "_id",
+      as: "conversationDetails",
+
+    }
+   },
+   {
+    $unwind:{path:'$conversationDetails',
+      preserveNullAndEmptyArrays:true
+
+    }
+   },
+   {
+    $match:{
+      'conversationDetails.participants':{$elemMatch:{
+        id:userId
+      }},
+      seen:false,
+      sender_id:{$ne:userId}
+    }
+   },
+   {$group:{
+    _id:'$chat_id',
+    unreadCount:{$sum:1}
+   }},
+   {$group:{
+    _id:null,
+    totalCount:{$sum:'$unreadCount'}
+   }},
+   {
+    $project:{
+      _id:0,
+      totalCount:1
+    }
+   }
+  ]
+  const result = await messages.aggregate(pipeline)
+  return result[0]?.totalCount
+}
+export const findConnectedUserIds=async(userId:string)=>{
+
+
+const pipeline=
+    [
+      {
+        $match: {
+          'participants.id': userId
+        }
+      },
+      { $unwind: { path: '$participants',preserveNullAndEmptyArrays: true, } },
+      {
+        $match: {
+          'participants.id': {
+            $ne: userId
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          userIds: { $addToSet: '$participants.id' }
+        }
+      },
+      {
+        $project:{
+          _id:0,
+          userIds:1
+        }
+      }
+    ]
+const result = await ConversationModel.aggregate(pipeline)
+
+return result[0]?.userIds
+}
+

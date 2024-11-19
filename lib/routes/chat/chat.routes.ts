@@ -10,6 +10,9 @@ import {
     markAllRead,
     getParticipant,
     checkConversationExist,
+    approveVideo,
+    getUnreadCount,
+    authenticatPusher
 } from '@/lib/controllers/chat/chat.controller';
 
 router.post('/create', createChat);
@@ -21,4 +24,7 @@ router.put('/offer/update', updateOfferStatus);
 router.put('/readAllMessages', markAllRead);
 router.post('/getParticipant', checkConversationExist);
 router.post('/checkConversation', checkConversationExist);
+router.put('/approveVideo', approveVideo)
+router.get('/unreadCount', getUnreadCount)
+router.post('/pusher-auth', authenticatPusher)
 export { router };

@@ -21,7 +21,7 @@ const updateApplicant = async (id: string, data: IUpdateApplicant) => {
     return res
 }
 
-const updateApplicantTracks = async (id: string, data: IUpdateApplicantTrack) => {
+const updateApplicantTracks = async (id: string|mongoose.Types.ObjectId|undefined, data: IUpdateApplicantTrack) => {
     const res = await Applicant.updateOne(
         {
             _id: id,
@@ -124,12 +124,15 @@ const deleteApplicant = async (_id: string) => {
     const res = await Applicant.findByIdAndDelete(_id)
     return res
 }
-
+const getApplicationById=async(id:string)=>{
+    return await Applicant.findOne({_id:new mongoose.Types.ObjectId(id)})
+}
 export default {
     isExist,
     createApplicant,
     updateApplicant,
     getApplicants,
     deleteApplicant,
-    updateApplicantTracks
+    updateApplicantTracks,
+    getApplicationById
 }

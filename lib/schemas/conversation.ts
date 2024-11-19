@@ -17,9 +17,23 @@ export interface conversationsAttributes {
   latestMessageId?: mongoose.Types.ObjectId;
   latestMessageCreatedAt?: Date;
   campaignId:mongoose.Types.ObjectId;
+  approved?:boolean
+  offerAccepted?:boolean
+  applicationId?:mongoose.Types.ObjectId
+  approvedMessageId?:mongoose.Types.ObjectId
+}
+export interface updatedConversationAttributes{
+  participants?: IParticipant[];
+  conversation_name?: string;
+  type?: string;
+  latestMessageId?: mongoose.Types.ObjectId;
+  latestMessageCreatedAt?: Date;
+  campaignId?:mongoose.Types.ObjectId;
+  approved?:boolean
+  offerAccepted?:boolean
+  applicationId?:mongoose.Types.ObjectId;
 
 }
-
 const typeEnum = Object.freeze({
   ONE_TO_ONE: "one-to-one",
   GROUP: "group",
@@ -41,9 +55,21 @@ const conversationSchema = new Schema<conversationsAttributes>(
       enum: Object.values(typeEnum),
       required:true
     },
-    latestMessageId: { type: mongoose.Types.ObjectId, ref: "messages" },
+    latestMessageId: { type: mongoose.Types.ObjectId, ref: schemaNameConstants?.messageSchema },
     latestMessageCreatedAt: Date,
-    campaignId:{type:Schema.Types.ObjectId,ref:schemaNameConstants?.campaignsSchema}
+    campaignId:{type:Schema.Types.ObjectId,ref:schemaNameConstants?.campaignsSchema},
+    applicationId:{type:Schema.Types.ObjectId,ref:schemaNameConstants?.applicantsSchema},
+    approved:{
+      type:Boolean,
+      default:false
+    },
+    offerAccepted:{
+      type:Boolean,
+      default:false
+    },
+    approvedMessageId:{
+      type: mongoose.Types.ObjectId, ref: schemaNameConstants?.messageSchema
+    }
   },
   {
     timestamps: true,
