@@ -17,9 +17,9 @@ const getCreators = async ({
     country,
     gender,
     languages,
-    min_age,
-    max_age,
-    userId
+    userId,
+    include_age_ranges,
+    exclude_age_ranges
 }: {
     search: string;
     page: number;
@@ -29,23 +29,42 @@ const getCreators = async ({
     languages?: string;
     min_age?: number;
     max_age?: number;
-    userId: string
+    userId: string,
+    include_age_ranges?: [],
+    exclude_age_ranges?: [],
 }) => {
 
     let filter
-    let minDOB
-    let maxDOB
-
 
     const roles = await getRoles()
     const role = roles.find((val) => {
         return val.name === 'Creator';
     });
 
-    if (min_age !== undefined && max_age !== undefined) {
-        const today = new Date();
-        minDOB = min_age !== undefined ? new Date(today.getFullYear() - max_age - 1, today.getMonth(), today.getDate()) : null;
-        maxDOB = max_age !== undefined ? new Date(today.getFullYear() - min_age, today.getMonth(), today.getDate()) : null;
+    const updateDOBConditions = (ranges: any) => {
+        return ranges.map((range: any) => {
+            const [minAge, maxAge] = range?._id?.split("-").map(Number);
+            const today = new Date();
+            const minDOB = new Date(today.getFullYear() - maxAge - 1, today.getMonth(), today.getDate());
+            const maxDOB = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
+            return {
+                dob: {
+                    $gte: minDOB,
+                    $lte: maxDOB,
+                },
+            };
+        });
+    };
+
+    let includeConditions: { dob: { $gte: Date; $lte: Date } }[] = [];
+    let excludeConditions: { dob: { $gte: Date; $lte: Date } }[] = [];
+
+    if (include_age_ranges) {
+        includeConditions = include_age_ranges?.length > 0 ? updateDOBConditions(include_age_ranges) : [];
+    }
+
+    if (exclude_age_ranges) {
+        excludeConditions = exclude_age_ranges?.length > 0 ? updateDOBConditions(exclude_age_ranges) : [];
     }
 
     filter = {
@@ -72,11 +91,13 @@ const getCreators = async ({
         ...(languages && { 'languages.title': { $in: [new RegExp(languages, 'i')] } }),
         ...(gender && { gender }),
         ...(country && { 'location.country': new RegExp(country, 'i') }),
-        ...(minDOB && maxDOB && {
-            dob: {
-                $gte: minDOB,
-                $lte: maxDOB,
-            },
+        ...(includeConditions.length > 0 && {
+            $and: [
+                { $or: includeConditions },
+            ],
+        }),
+        ...(excludeConditions.length > 0 && {
+            $nor: excludeConditions,
         }),
     };
 

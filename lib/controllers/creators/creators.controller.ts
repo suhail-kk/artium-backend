@@ -15,8 +15,8 @@ export async function getCreators(req: Request, res: Response, next: NextFunctio
         const gender = req.query.gender as string || ''
         const country = req.query.country as string || ''
         const languages = req.query.languages as string || ''
-        const max_age: any = req.query.max_age
-        const min_age: any = req.query.min_age
+        const include_age_ranges: any = req.query.include_age_ranges
+        const exclude_age_ranges: any = req.query.exclude_age_ranges
         const page = parseInt((req.query.page as string) || '1')
         const limit = parseInt((req.query.limit as string) || '10')
 
@@ -27,9 +27,9 @@ export async function getCreators(req: Request, res: Response, next: NextFunctio
             country,
             gender,
             languages,
-            min_age,
-            max_age,
-            userId
+            userId,
+            include_age_ranges,
+            exclude_age_ranges
         }
         )
         const totalPages = Math.ceil(count / limit)
