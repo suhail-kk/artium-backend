@@ -1,39 +1,32 @@
-import seedRoles from '@/lib/seeders/roleSeeder';
-import seedVideoTypes from '@/lib/seeders/videoTypeSeeder';
-import seedDeliveryTypes from '@/lib/seeders/deliveryTypeSeeder';
-import seedCreatorsCount from '@/lib/seeders/creatorsCountSeeder';
-import seedLanguages from '@/lib/seeders/languages.seeder';
+import seedRoles from '@/lib/seeders/role.seeder';
+import seedGender from '@/lib/seeders/gender.seeder';
+import seedEventType from '@/lib/seeders/eventType.seeder';
+import seedProgramType from '@/lib/seeders/programType.seeder';
 
 const SEED_ROLES = 'SEED_ROLES';
-const VIDEO_TYPES = 'VIDEO_TYPES';
-const DELIVERY_TYPES = 'DELIVERY_TYPES';
-const CREATORS_COUNT = 'CREATORS_COUNT';
-const LANGUAGES = 'LANGUAGES';
+const SEED_GENDER = 'SEED_GENDER';
+const SEED_EVENT_TYPE = 'SEED_EVENT_TYPE';
+const SEED_PROGRAM_TYPE = "SEED_PROGRAM_TYPE"
 
 export default [
 	{
 		name: SEED_ROLES,
 		func: seedRoles,
-		description: 'Inserting creators, brand ,admin roles',
+		description: 'Inserting roles',
 	},
 	{
-		name: VIDEO_TYPES,
-		func: seedVideoTypes,
-		description: 'Inserting video types for creating campaigns',
+		name: SEED_GENDER,
+		func: seedGender,
+		description: 'Inserting genders',
 	},
 	{
-		name: DELIVERY_TYPES,
-		func: seedDeliveryTypes,
-		description: 'Inserting delivery types for creating campaigns',
+		name: SEED_EVENT_TYPE,
+		func: seedEventType,
+		description: 'Inserting even type',
 	},
 	{
-		name: CREATORS_COUNT,
-		func: seedCreatorsCount,
-		description: 'Inserting creators count for creating campaigns',
-	},
-	{
-		name: LANGUAGES,
-		func: seedLanguages,
-		description: 'seeding common languages',
+		name: SEED_PROGRAM_TYPE,
+		func: seedProgramType,
+		description: 'Inserting program type',
 	},
 ];

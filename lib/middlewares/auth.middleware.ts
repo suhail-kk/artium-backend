@@ -1,13 +1,13 @@
-import { BadRequestError ,NotAuthorizedError} from '../utils/errors/errors'
-import { verifyJWTToken } from '../utils/jwtUtils'
-import userServices from '../services/user.services'
+import { ICreateUser } from '@/lib/types/user.interface'
+import { verifyJWTToken } from '@/lib/utils/jwtUtils'
+import userServices from '@/lib/services/auth.services'
 import { NextFunction, Request, Response } from 'express'
-import { IUser } from '../types/user'
+import { BadRequestError, NotAuthorizedError } from '@/lib/utils/errors/errors'
 
 declare global {
   namespace Express {
     interface Request {
-      user: IUser
+      user: ICreateUser
     }
   }
 }
@@ -30,7 +30,7 @@ export const authenticateTokenMiddleware = async (
       throw new NotAuthorizedError()
 
     // check user exist on the database
-    const user: any = await userServices.getUserById(decodeToken['id'])
+    const user: any = await userServices.getUserProifleById(decodeToken['id'])
     if (!user) throw new NotAuthorizedError()
     req.user = {
       ...user,
@@ -41,7 +41,7 @@ export const authenticateTokenMiddleware = async (
     next()
   } catch (error: any) {
     if (error?.name === 'TokenExpiredError') {
-       res.status(498).json({ message: 'Token expired' })
+      res.status(498).json({ message: 'Token expired' })
     }
     throw new BadRequestError(error.message)
   }

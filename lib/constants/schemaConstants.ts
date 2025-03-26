@@ -1,34 +1,43 @@
-const userSchema = 'users'
-const otpSchema = 'otps'
-const brandSchema = 'brands'
-const roleSchema = 'Role'
-const dbSeederSchema = 'db_seeders'
-const interestsSchema = 'interests'
-const languagesSchema = 'languages'
-const productSchema = 'products'
-const deliveryTypeSchema = 'deliverytypes'
-const videoTypeSchema = 'videotypes'
-const creatorsCount = 'creatorscount'
-const campaignsSchema = 'Campaign'
-const conversationSchema = 'Conversations'
-const messageSchema = 'messages'
-const applicantsSchema = 'applicants'
-const ProjectsSchema = 'projects'
+const userSchema = "users";
+const roleSchema = "roles";
+const eventSchema = "event";
+const teamSchema = "team";
+const eventType = "eventtypes";
+const stagesSchema = "stages";
+const programSchema = "programs";
+const resultSchema = "result";
+const genderSchema = "gender";
+const reportSchema = "report";
+const requestSchema = "request";
+const programType = "programtypes";
+const dbSeederSchema = "seeders";
+const applicantSchema = "applicants";
+const attendenceSchema = "attendence";
+const departmentSchema = "department";
+const invigilatorSchema = "invigilator";
+const notificationSchema = "notification";
+const profileDetailsSchema = "profiledetails";
+const programRegistrationSchema = "programregistration";
+
 export default {
     userSchema,
-    otpSchema,
-    brandSchema,
+    eventType,
     roleSchema,
+    teamSchema,
+    reportSchema,
+    eventSchema,
+    resultSchema,
+    genderSchema,
+    programType,
+    requestSchema,
+    stagesSchema,
+    programSchema,
     dbSeederSchema,
-    interestsSchema,
-    languagesSchema,
-    productSchema,
-    deliveryTypeSchema,
-    videoTypeSchema,
-    creatorsCount,
-    campaignsSchema,
-    conversationSchema,
-    messageSchema,
-    applicantsSchema,
-    ProjectsSchema
-}
+    applicantSchema,
+    attendenceSchema,
+    departmentSchema,
+    invigilatorSchema,
+    notificationSchema,
+    profileDetailsSchema,
+    programRegistrationSchema
+};

@@ -1,90 +1,16 @@
+import mongoose, { Types } from 'mongoose';
 import { NextFunction, Request, Response } from 'express';
+
 import {
 	generateHashPassword,
 	validatePassword,
 } from '@/lib/utils/passwordUtils';
-import userServices, { getUserMe } from '@/lib/services/auth.services';
-import { ICreateUser } from '@/lib/types/user';
-import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
-import { createUserJWT, verifyJWTToken } from '@/lib/utils/jwtUtils';
-import brandService from '@/lib/services/brand.service';
-import { IUser, IBrand, IbrandObject } from '@/lib/types/user';
-import { BadRequestError } from '@/lib/utils/errors/errors';
 import roleService from '@/lib/services/role.service';
-import mongoose from 'mongoose';
+import { BadRequestError } from '@/lib/utils/errors/errors';
+import userServices, { getUserMe } from '@/lib/services/auth.services';
+import { createUserJWT, verifyJWTToken } from '@/lib/utils/jwtUtils';
+import { sendSuccessResponse } from '@/lib/utils/responses/success.handler';
 
-
-const prepareBrandData = async (
-	firstName: string,
-	lastName:string,
-	email: string,
-	password: string,
-	brand: IbrandObject,
-	lead_description: string,
-	role_id: string,
-	location: string
-): Promise<ICreateUser> => {
-	try {
-		const data: IBrand = {
-			title: brand?.title,
-			instagramLink: brand?.instagram_link,
-			brandDescription: brand?.brand_description,
-		};
-		const brandData = await brandService.createBrand(data);
-		const hashedPassword = await generateHashPassword(password);
-
-		const Data: ICreateUser = {
-			email: email,
-			firstName: firstName,
-			lastName:lastName,
-			password: hashedPassword,
-			role: role_id,
-			brandId: brandData?._id,
-			location: location,
-			leadDescription: lead_description,
-			is_verified: true,
-		};
-		return Data;
-	} catch (error) {
-		console.log(error);
-		throw new Error('Failed to prepare brand data.');
-	}
-};
-const prepareCreatorData = async (
-	email: string,
-	firstName: string,
-	lastName:string,
-	password: string,
-	location: string,
-	lead_description: string,
-	role_id: string
-): Promise<ICreateUser> => {
-	try {
-		const hashedPassword = await generateHashPassword(password);
-		const userData = {
-			email: email,
-			firstName: firstName,
-			lastName:lastName,
-			password: hashedPassword,
-			role: role_id,
-			location: location,
-			leadDescription: lead_description,
-			is_verified: true,
-		};
-		return userData;
-	} catch (error) {
-		console.log(error, 'ee');
-
-		throw new Error('Failed to prepare brand data.');
-	}
-};
-const parseName=(name:string)=>{
-	const parsedName=name.trim().split(" ")
-	return{
-		firstName:parsedName[0],
-		lastName:parsedName?.length>1?parsedName.slice(1).join(""):""
-	}
-}
 export const registerUser = async (
 	req: Request,
 	res: Response,
@@ -92,26 +18,23 @@ export const registerUser = async (
 ) => {
 	try {
 		const {
-			name,
+			role,
 			email,
 			password,
-			role_name,
-			brand,
-			location,
-			lead_description,
+			full_name,
 		} = req.body;
-		const userRole: IUser = await roleService.FindRoleDetailsByName(role_name);
+
+		const userRole = await roleService.checkExist(role);
 		if (!userRole) {
 			throw new BadRequestError('Invalid user role');
 		}
-		const {firstName,lastName}=parseName(name)
+
 		const userwithEmail = await userServices.checkUser({
-			email: email,
-			deletedAt: null,
-			role:new mongoose.Types.ObjectId(userRole._id)
+			email,
+			role
 		});
 
-		
+
 		if (userwithEmail) {
 			return res.status(400).json({
 				isError: true,
@@ -124,53 +47,16 @@ export const registerUser = async (
 			});
 		}
 
-
-		// prepare user data as per role
-		let userData: ICreateUser | undefined;
-		if (role_name === 'Creator') {
-			userData = await prepareCreatorData(
-				email,
-				firstName,
-				lastName,
-				password,
-				location,
-				lead_description,
-				userRole?._id
-			);
-		} else if (role_name === 'Brand') {
-			if (brand) {
-				const brandDetails: IBrand = await brandService.findBrandDetails(
-					brand.title
-				);
-				if (brandDetails) {
-					return res.status(400).json({
-						isError: true,
-						errors: [
-							{
-								msg: 'Company already registered',
-								path: 'companyName',
-							},
-						],
-					});
-				}
-				userData = await prepareBrandData(
-					firstName,
-					lastName,
-					email,
-					password,
-					brand,
-					lead_description,
-					userRole._id,
-					location
-				);
-			}
-		} else {
-			throw new BadRequestError('Invalid request data');
+		const payload = {
+			role,
+			email,
+			full_name,
+			password: await generateHashPassword(password),
 		}
-		if (!userData) {
+		if (!payload) {
 			throw new BadRequestError('Invalid user data');
 		}
-		const createdUserData = await userServices.createUser(userData);
+		const createdUserData = await userServices.createUser(payload);
 		sendSuccessResponse(res, 'Success', createdUserData);
 	} catch (error) {
 		console.log(error);
@@ -193,15 +79,15 @@ export const login = async (
 	next: NextFunction
 ) => {
 	try {
-		const { email, password ,role_name} = req.body;
-		const userRole: IUser = await roleService.FindRoleDetailsByName(role_name);
+		const { email, password, role } = req.body;
+		const userRole = await roleService.checkExist(role);
 		if (!userRole) {
 			throw new BadRequestError('Invalid user role');
 		}
+
 		const user = await userServices.checkUser({
-			email: email,
-			deletedAt: null,
-			role:new mongoose.Types.ObjectId(userRole._id)
+			email,
+			role
 		});
 		if (!user)
 			return res.status(400).json({
@@ -277,44 +163,123 @@ export const reGenereateToken = async (
 		const { jwtToken, refreshToken: newRefreshToken } =
 			createUserJWT(decodeValue);
 
-		const sessionOptions = {
-			token: jwtToken,
-			refreshToken: refreshToken,
-		};
-		req.session = sessionOptions;
+		res.cookie("accessToken", jwtToken, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "strict",
+			maxAge: 60 * 60 * 1000,
+		});
 
-		sendSuccessResponse(res, 'Token created', {
-			jwtToken,
-			refreshToken: newRefreshToken,
+		res.cookie("refreshToken", newRefreshToken, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "strict",
+			maxAge: 7 * 24 * 60 * 60 * 1000,
+		});
+
+
+		sendSuccessResponse(res, "Logged in successfully", {
+			user: user,
 		});
 	} catch (error) {
 		next(error);
 	}
 };
 
-export const logoutUser = async (
-	req: Request,
-	res: Response,
-	next: NextFunction
-) => {
+export const logoutUser = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		req.session = {
-			refreshToken: '',
-			token: '',
-		};
-		sendSuccessResponse(res, 'Logout success.');
+
+		res.clearCookie("accessToken", {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "strict",
+		});
+
+		res.clearCookie("refreshToken", {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "strict",
+		});
+
+		sendSuccessResponse(res, "Logout successful.");
 	} catch (error) {
 		next(error);
 	}
 };
 
+
 export const me = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { _id } = req?.user;
-		const user: any = await getUserMe(_id);
-		
+		const user: any = await getUserMe(new mongoose.Types.ObjectId(_id));
+
 		if (!user) throw new BadRequestError("User doesn't exists");
 		sendSuccessResponse(res, 'Success', user[0]);
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { email, role } = req.body;
+
+		// Check if email and role are provided
+		if (!email || !role) {
+			throw new BadRequestError('Email and role are required');
+		}
+
+		const userRole = await roleService.checkExist(role);
+		if (!userRole) {
+			throw new BadRequestError('Invalid user role');
+		}
+
+		const userwithEmail = await userServices.checkUser({
+			email,
+			role
+		});
+
+		if (!userwithEmail) {
+			throw new BadRequestError('User with the specified email and role does not exist');
+		}
+
+		// If user exists, send success response
+		sendSuccessResponse(res, 'Email verified successfully. Proceed to reset the password.', userwithEmail);
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { email, role, password } = req.body;
+
+		if (!email || !role || !password) {
+			throw new BadRequestError('Email, role, and new password are required');
+		}
+
+		const userRole = await roleService.checkExist(role);
+		if (!userRole) {
+			throw new BadRequestError('Invalid user role');
+		}
+
+		const userwithEmail = await userServices.checkUser({
+			email,
+			role
+		});
+
+
+		if (!userwithEmail) {
+			throw new BadRequestError('User with the specified email and role does not exist');
+		}
+
+		const payload = {
+			password: await generateHashPassword(password)
+		}
+
+		await userServices.updatePassword(userwithEmail?._id, payload)
+
+		sendSuccessResponse(res, 'Password updated successfully.', userwithEmail);
 	} catch (error) {
 		next(error);
 	}

@@ -22,6 +22,13 @@ app.use(express.urlencoded({ extended: true }));
 // Define your API routes
 app.use('/api/v1', routesv1);
 
+app.use(
+	cors({
+		origin: "http://localhost:3000",
+		credentials: true,
+	})
+);
+
 // Catch-all for undefined routes
 app.all('*', (req: Request, res: Response, next: NextFunction) => {
 	next(new NotFoundError()); // Pass error to next middleware (error handler)

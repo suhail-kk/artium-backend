@@ -1,23 +1,22 @@
-import Role from '../schemas/roles'
-interface IbulkInsert {
-    name: string,
-    description: string,
-    type: string,
-    role: string,
+import Role from "@/lib/schemas/role"
+import { IRole } from "@/lib/types/role.interface"
+
+const bulkInsert = async (data: IRole[]) => {
+    return await Role.insertMany(data)
 }
 
-const FindRoleDetailsByName = async (role_name: string) => {
-    return await Role.findOne({ name: role_name })
-}
-
-const bulkInsert = async (data: IbulkInsert[]) => {
-    const res = await Role.insertMany(data)
+const getAll = async () => {
+    const res = await Role.find()
     return res
 }
-export const getRole = async (id: string) => {
-    return await Role.findOne({ _id: id })
+
+const checkExist = async (_id: string) => {
+    const res = await Role.exists({ _id })
+    return res
 }
-const getAllRoles = async () => {
-    return await Role.find({})
+
+export default {
+    getAll,
+    checkExist,
+    bulkInsert
 }
-export default { bulkInsert, FindRoleDetailsByName, getRole, getAllRoles }

@@ -1,4 +1,4 @@
-import dbSeeders from '@/lib/schemas/dbSeeders'
+import dbSeeders from '@/lib/schemas/seeders'
 import { NextFunction, Request, Response } from 'express'
 import { BadRequestError } from '@/lib/utils/errors/errors'
 import seederConstants from '@/lib/constants/seederConstants'
